@@ -13,7 +13,7 @@ import { FONT_FAMILIES } from '../src/components/Typography';
 import { useHintPurchase } from '../src/hooks/useHintPurchase';
 import { useTranslation } from '../src/i18n';
 import { trackHintStoreViewed } from '../src/services/analytics';
-import { PAYWALL_GOLD, paywallThemeColors, useTheme } from '../src/theme';
+import { hexColors, PAYWALL_GOLD, paywallThemeColors, useTheme } from '../src/theme';
 import { isMacOS } from '../src/utils/platform';
 import { useResponsive } from '../src/utils/useResponsive';
 
@@ -46,6 +46,7 @@ export default function HintStoreScreen() {
     purchasingId,
     purchasePack,
     isPackAvailable,
+    purchaseFailed,
   } = useHintPurchase(source);
 
   // Default selection: the middle pack.
@@ -54,11 +55,17 @@ export default function HintStoreScreen() {
   );
 
   // Success feedback: the global purchase listener credits the wallet, so a
-  // balance increase while the sheet is open means the purchase landed.
+  // balance increase means the purchase landed. Armed only after a purchase
+  // attempt from THIS sheet — the initial async wallet load also raises the
+  // balance (0 → stored value) and must not read as "Hints added!".
+  const attemptedRef = useRef(false);
   const prevBalanceRef = useRef(balance);
   const [justCredited, setJustCredited] = useState(false);
   useEffect(() => {
-    if (balance > prevBalanceRef.current) {
+    if (purchasingId !== null) attemptedRef.current = true;
+  }, [purchasingId]);
+  useEffect(() => {
+    if (attemptedRef.current && balance > prevBalanceRef.current) {
       setJustCredited(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     }
@@ -74,6 +81,14 @@ export default function HintStoreScreen() {
   // Cached prices can render the tiles before the store answers, but a
   // purchase needs the LIVE product — keep the CTA down until it's in.
   const selectedAvailable = isPackAvailable(selectedId);
+  const selectedPrice = getDisplayPrice(selectedId);
+  const errorColor = isDark ? hexColors.dark.error : hexColors.light.error;
+  // CTA carries the exact charge so there's no ambiguity about which tile
+  // is selected before the native payment sheet appears.
+  const ctaLabel =
+    selectedPrice !== '---'
+      ? `${t('hintStoreCta', { count: hintsFor(selectedId) })} · ${selectedPrice}`
+      : t('hintStoreCta', { count: hintsFor(selectedId) });
 
   /* eslint-disable react-native/no-unused-styles -- styles used via styles.* */
   const styles = useMemo(
@@ -285,7 +300,7 @@ export default function HintStoreScreen() {
           onPress={() => purchasePack(selectedId)}
           disabled={isPurchasing || !selectedAvailable}
           role="button"
-          aria-label={t('hintStoreCta', { count: hintsFor(selectedId) })}
+          aria-label={ctaLabel}
           style={({ pressed }) => [
             styles.ctaButton,
             (isPurchasing || !selectedAvailable) && styles.ctaButtonDisabled,
@@ -302,11 +317,23 @@ export default function HintStoreScreen() {
               <ActivityIndicator size="small" color={CREST_INK} />
             ) : (
               <Text.Body fontFamily={FONT_FAMILIES.extrabold} color={CREST_INK}>
-                {t('hintStoreCta', { count: hintsFor(selectedId) })}
+                {ctaLabel}
               </Text.Body>
             )}
           </LinearGradient>
         </Pressable>
+
+        {/* One status line under the CTA: a store error from the last attempt,
+            or why the button is disabled (live product not fetched yet). */}
+        {purchaseFailed ? (
+          <Text.Caption color={errorColor} textAlign="center" accessibilityLiveRegion="polite">
+            {t('hintStorePurchaseFailed')}
+          </Text.Caption>
+        ) : !selectedAvailable && !isPurchasing ? (
+          <Text.Caption color={tc.cancelText} textAlign="center">
+            {t('hintStoreConnecting')}
+          </Text.Caption>
+        ) : null}
 
         <YStack alignItems="center">
           <Text.Caption color={tc.cancelText} textAlign="center">

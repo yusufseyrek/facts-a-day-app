@@ -28,18 +28,46 @@ Per product:
 - ☐ Reference Name + Product ID from the table above. Product ID is immutable after creation — copy-paste it.
 - ☐ Price: base country **United States**, tier from the table, and let Apple **automatically generate** all other regional prices.
 - ☐ Availability: all countries/regions.
-- ☐ Localizations — add all 8 (Display Name ≤ 30 chars, Description ≤ 45 chars; the strings below fit):
+- ☐ Localizations — add all 8 per product, exact strings below (Display Name ≤ 30 chars, Description ≤ 45 chars; every string fits). Markets without one of these localizations automatically fall back to en-US.
 
-| ASC locale | Display Name («N» = 20/50/100) | Description |
+**`factsaday_hints_small`**
+
+| ASC locale | Display Name | Description |
 |---|---|---|
-| en-US | `N Trivia Hints` | `N hints that never expire` |
-| de-DE | `N Quiz-Hinweise` | `N Hinweise, verfallen nie` |
-| es-ES | `N pistas de trivia` | `N pistas que nunca caducan` |
-| fr-FR | `N indices de quiz` | `N indices sans expiration` |
-| ja | `トリビアヒントN個` | `有効期限のないヒントN個` |
-| ko | `트리비아 힌트 N개` | `만료되지 않는 힌트 N개` |
-| tr | `N Trivia İpucu` | `Süresi dolmayan N ipucu` |
-| zh-Hans | `N 条问答提示` | `N 条永不过期的提示` |
+| en-US | `20 Trivia Hints` | `20 hints that never expire` |
+| de-DE | `20 Quiz-Hinweise` | `20 Hinweise, verfallen nie` |
+| es-ES | `20 pistas de trivia` | `20 pistas que nunca caducan` |
+| fr-FR | `20 indices de quiz` | `20 indices sans expiration` |
+| ja | `トリビアヒント20個` | `有効期限のないヒント20個` |
+| ko | `트리비아 힌트 20개` | `만료되지 않는 힌트 20개` |
+| tr | `20 Trivia İpucu` | `Süresi dolmayan 20 ipucu` |
+| zh-Hans | `20 条问答提示` | `20 条永不过期的提示` |
+
+**`factsaday_hints_medium`**
+
+| ASC locale | Display Name | Description |
+|---|---|---|
+| en-US | `50 Trivia Hints` | `50 hints that never expire` |
+| de-DE | `50 Quiz-Hinweise` | `50 Hinweise, verfallen nie` |
+| es-ES | `50 pistas de trivia` | `50 pistas que nunca caducan` |
+| fr-FR | `50 indices de quiz` | `50 indices sans expiration` |
+| ja | `トリビアヒント50個` | `有効期限のないヒント50個` |
+| ko | `트리비아 힌트 50개` | `만료되지 않는 힌트 50개` |
+| tr | `50 Trivia İpucu` | `Süresi dolmayan 50 ipucu` |
+| zh-Hans | `50 条问答提示` | `50 条永不过期的提示` |
+
+**`factsaday_hints_large`**
+
+| ASC locale | Display Name | Description |
+|---|---|---|
+| en-US | `100 Trivia Hints` | `100 hints that never expire` |
+| de-DE | `100 Quiz-Hinweise` | `100 Hinweise, verfallen nie` |
+| es-ES | `100 pistas de trivia` | `100 pistas que nunca caducan` |
+| fr-FR | `100 indices de quiz` | `100 indices sans expiration` |
+| ja | `トリビアヒント100個` | `有効期限のないヒント100個` |
+| ko | `트리비아 힌트 100개` | `만료되지 않는 힌트 100개` |
+| tr | `100 Trivia İpucu` | `Süresi dolmayan 100 ipucu` |
+| zh-Hans | `100 条问答提示` | `100 条永不过期的提示` |
 
 - ☐ Review screenshot: upload `docs/assets/hint-store-review.jpg` (same one for all three products is fine; it's for review only, never shown on the store).
 - ☐ Review notes (paste per product):
@@ -59,7 +87,18 @@ Per product:
 
   > Adds N hints to your balance. A hint reveals a clue for the current trivia question. Hints never expire and work in every trivia mode.
 
-- ☐ Translations: optional, but add the 8 locales using the ASC table's names + a translated one-liner if you want localized payment sheets on Android too.
+- ☐ Translations: add the 8 locales — Name = the ASC display names above, Description per locale («N» = 20/50/100, all ≤ 200 chars):
+
+| Play locale | Description |
+|---|---|
+| en-US | `Adds N hints to your balance. A hint reveals a clue for the current trivia question. Hints never expire and work in every trivia mode.` |
+| de-DE | `Fügt deinem Guthaben N Hinweise hinzu. Ein Hinweis zeigt einen Tipp zur aktuellen Quizfrage. Hinweise verfallen nie und gelten in jedem Quiz-Modus.` |
+| es-ES | `Añade N pistas a tu saldo. Una pista revela una ayuda para la pregunta actual. Las pistas nunca caducan y sirven en todos los modos de trivia.` |
+| fr-FR | `Ajoute N indices à votre solde. Un indice révèle une aide pour la question en cours. Les indices n'expirent jamais et fonctionnent dans tous les modes de quiz.` |
+| ja-JP | `ヒントをN個追加します。ヒントは現在のトリビア問題の手がかりを表示します。有効期限はなく、すべてのモードで使えます。` |
+| ko-KR | `힌트 N개를 잔액에 추가합니다. 힌트는 현재 문제의 단서를 보여줍니다. 힌트는 만료되지 않으며 모든 트리비아 모드에서 사용할 수 있습니다.` |
+| tr-TR | `Bakiyene N ipucu ekler. İpucu, mevcut trivia sorusu için bir açıklama gösterir. İpuçlarının süresi dolmaz ve tüm trivia modlarında geçerlidir.` |
+| zh-CN | `为你的余额添加 N 条提示。提示会显示当前问答题的线索。提示永不过期，适用于所有问答模式。` |
 - ☐ Price: set USD from the table → **use the auto-converted local prices** (Play rounds per market).
 - ☐ **Save → Activate.** No review pass; active within the hour.
 

@@ -75,6 +75,8 @@ export interface HintPurchase {
    * fetched product). Always true in dev.
    */
   isPackAvailable: (productId: string) => boolean;
+  /** True when the last purchase attempt failed (store error, not a cancel). */
+  purchaseFailed: boolean;
 }
 
 /**
@@ -90,6 +92,7 @@ export function useHintPurchase(source: string): HintPurchase {
     __DEV__ ? DEV_MOCK_PACK_PRICES : []
   );
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
+  const [purchaseFailed, setPurchaseFailed] = useState(false);
 
   // Cached prices for instant render before the store answers.
   useEffect(() => {
@@ -136,6 +139,7 @@ export function useHintPurchase(source: string): HintPurchase {
   const purchasePack = useCallback(
     async (productId: string) => {
       if (purchasingId || !isPackAvailable(productId)) return;
+      setPurchaseFailed(false);
 
       trackPaywallPurchaseInitiated({
         productId,
@@ -168,6 +172,7 @@ export function useHintPurchase(source: string): HintPurchase {
         // global purchaseErrorListener; just avoid noisy cancel logs here.
         if (error?.code !== ErrorCode.UserCancelled) {
           console.error('Hint pack purchase error:', error);
+          setPurchaseFailed(true);
         }
       } finally {
         setPurchasingId(null);
@@ -189,5 +194,6 @@ export function useHintPurchase(source: string): HintPurchase {
     purchasePack,
     productsAvailable,
     isPackAvailable,
+    purchaseFailed,
   };
 }

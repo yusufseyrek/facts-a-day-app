@@ -532,6 +532,8 @@ export const translations = {
     sponsored: 'Gesponsert',
 
     // Premium
+    hintStorePurchaseFailed: 'Kauf fehlgeschlagen. Bitte erneut versuchen.',
+    hintStoreConnecting: 'Verbindung zum Store…',
     settingsPremium: 'Premium',
     settingsUpgradeToPremium: 'Auf Premium upgraden',
     settingsRemoveAds: 'Werbung entfernen',
@@ -1222,6 +1224,8 @@ export const translations = {
     paywallSubtitle: 'Unlock the full experience',
     paywallFeatureNoAds: 'Remove Ads',
     paywallFeatureNoAdsDesc: 'No banners, no interruptions',
+    hintStorePurchaseFailed: 'Purchase failed. Please try again.',
+    hintStoreConnecting: 'Connecting to the store…',
     paywallFeatureHints: 'Daily Trivia Hints',
     paywallFeatureHintsDesc: 'Get 3 free hints every day',
     paywallFeatureOffline: 'Offline Library',
@@ -1912,6 +1916,8 @@ export const translations = {
     paywallBestValue: 'Mejor oferta',
     paywallSavePercent: 'Ahorra ~%{percent}%',
     paywallFlexible: 'Flexible',
+    hintStorePurchaseFailed: 'No se pudo completar la compra. Inténtalo de nuevo.',
+    hintStoreConnecting: 'Conectando con la tienda…',
     paywallAnnual: 'Anual',
     paywallPerYear: '/año',
     paywallFreeTrial: '3 días de prueba gratis',
@@ -2605,6 +2611,8 @@ export const translations = {
     paywallTerms: 'Conditions',
     paywallPrivacy: 'Confidentialité',
     paywallLegalAgree: 'En continuant, vous acceptez nos',
+    hintStorePurchaseFailed: "L'achat a échoué. Veuillez réessayer.",
+    hintStoreConnecting: 'Connexion à la boutique…',
     paywallLegalAnd: 'et',
     paywallPremiumTag: 'PREMIUM',
     paywallHubHeadline: 'Tu es sur ta lancée.',
@@ -3292,6 +3300,8 @@ export const translations = {
     paywallPerWeekValue: '週あたり %{price}',
 
     // Downgrade Enforcement
+    hintStorePurchaseFailed: '購入できませんでした。もう一度お試しください。',
+    hintStoreConnecting: 'ストアに接続中…',
 
     // Badges / Achievements
     achievements: '実績',
@@ -3976,6 +3986,8 @@ export const translations = {
     badgeProgress: '%{current}/%{target}',
     badgeStarProgress: '별 %{star}까지 %{count} 남음',
     badgeNextHint: '다음 등급까지 %{count} 더 필요',
+    hintStorePurchaseFailed: '구매에 실패했습니다. 다시 시도해 주세요.',
+    hintStoreConnecting: '스토어에 연결하는 중…',
     badgeSectionReading: '독서',
     badgeSectionQuiz: '퀴즈',
     settingsGeneral: '일반',
@@ -4663,6 +4675,8 @@ export const translations = {
     badge_bookworm_goal: '%{count} dakika oku',
     badge_daily_reader: 'Günlük Okuyucu',
     badge_daily_reader_desc: 'Ardışık gün okuma serisi',
+    hintStorePurchaseFailed: 'Satın alma başarısız oldu. Lütfen tekrar deneyin.',
+    hintStoreConnecting: 'Mağazaya bağlanılıyor…',
     badge_daily_reader_goal: '%{count} günlük okuma serisi',
     badge_quiz_starter: 'Quiz Başlatıcı',
     badge_quiz_starter_desc: 'Tamamlanan trivia quizleri',
@@ -5343,6 +5357,8 @@ export const translations = {
     badge_master_scholar_desc: '已掌握的问题',
     badge_master_scholar_goal: '掌握%{count}个问题',
     badge_streak_champion: '连续记录冠军',
+    hintStorePurchaseFailed: '购买失败，请重试。',
+    hintStoreConnecting: '正在连接商店…',
     badge_streak_champion_desc: '最佳每日知识测验连续记录',
     badge_streak_champion_goal: '%{count}天测验连续',
     badge_fact_collector: '知识收藏家',
