@@ -117,6 +117,31 @@ echo -e "Build number incremented from $CURRENT_BUILD to ${GREEN}$NEW_BUILD${NC}
 print_step "Generating native iOS project..."
 npx expo prebuild --platform ios
 
+# Force the PRODUCTION APNs environment on the release entitlements.
+#
+# `expo prebuild` writes aps-environment=development (sandbox). EAS Build swaps
+# that to `production` automatically for a store build, but this LOCAL xcodebuild
+# archive has no EAS step to do it, so the sandbox value would otherwise ship to
+# the App Store — and EVERY iOS push then fails with BadEnvironmentKeyInToken,
+# because Expo's managed relay only ever targets the production APNs gateway. This
+# is signed into the binary and is NOT OTA-fixable, so it must be set before the
+# archive. Local dev builds (`expo run:ios`) keep development and simply can't
+# receive Expo push locally — test push on a TestFlight build instead.
+print_step "Setting aps-environment=production for the App Store archive..."
+APP_ENTITLEMENTS="$IOS_DIR/$SCHEME/$SCHEME.entitlements"
+if [ ! -f "$APP_ENTITLEMENTS" ]; then
+    print_error "Entitlements not found at $APP_ENTITLEMENTS after prebuild"
+    exit 1
+fi
+/usr/libexec/PlistBuddy -c "Set :aps-environment production" "$APP_ENTITLEMENTS" 2>/dev/null \
+    || /usr/libexec/PlistBuddy -c "Add :aps-environment string production" "$APP_ENTITLEMENTS"
+APS_ENV=$(/usr/libexec/PlistBuddy -c "Print :aps-environment" "$APP_ENTITLEMENTS")
+if [ "$APS_ENV" != "production" ]; then
+    print_error "Failed to set aps-environment=production (got '$APS_ENV')"
+    exit 1
+fi
+echo -e "  aps-environment => ${GREEN}production${NC}"
+
 # Clean previous builds
 print_step "Cleaning previous builds..."
 rm -rf "$PROJECT_ROOT/build/ios"
