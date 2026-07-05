@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
 import { ContentContainer, ScreenContainer } from '../../../src/components';
-import { ArrowRight, Lightbulb, Sparkles, Trophy } from '../../../src/components/icons';
+import { ArrowRight, HelpCircle, Sparkles, Trophy } from '../../../src/components/icons';
 import { XStack, YStack } from '../../../src/components/Stacks';
 import { TriviaGridCard, TriviaIntroModal, TriviaStatsHero } from '../../../src/components/trivia';
 import { FONT_FAMILIES, Text } from '../../../src/components/Typography';
@@ -465,7 +465,7 @@ export default function TriviaScreen() {
                           borderWidth={1}
                           borderColor={isDark ? hexColors.dark.border : hexColors.light.border}
                         >
-                          <Lightbulb
+                          <HelpCircle
                             size={iconSizes.xs}
                             color={hintBalance > 0 ? primaryColor : secondaryTextColor}
                           />

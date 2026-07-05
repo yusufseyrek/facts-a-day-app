@@ -543,6 +543,14 @@ export const Music = icon([
   [Circle, { cx: '18', cy: '16', r: '3' }],
 ]);
 
+export const ListChecks = icon([
+  [Path, { d: 'm3 17 2 2 4-4' }],
+  [Path, { d: 'm3 7 2 2 4-4' }],
+  [Path, { d: 'M13 6h8' }],
+  [Path, { d: 'M13 12h8' }],
+  [Path, { d: 'M13 18h8' }],
+]);
+
 export const ListPlus = icon([
   [Path, { d: 'M11 12H3' }],
   [Path, { d: 'M16 6H3' }],

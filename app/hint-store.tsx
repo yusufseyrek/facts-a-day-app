@@ -6,7 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams } from 'expo-router';
 
 import { Text } from '../src/components';
-import { Check, Lightbulb } from '../src/components/icons';
+import { Check, HelpCircle } from '../src/components/icons';
 import { XStack, YStack } from '../src/components/Stacks';
 import { FONT_FAMILIES } from '../src/components/Typography';
 import { useFormSheetBottomPadding } from '../src/hooks/useFormSheetBottomPadding';
@@ -207,14 +207,13 @@ export default function HintStoreScreen() {
 
   const content = (
     <>
-      {/* Header — lightbulb + title, description below. */}
+      {/* Header — question-mark badge + title, description below. HelpCircle
+          can't take the paywall family's fill treatment (a filled circle would
+          swallow its own question mark), so a heavier stroke carries the same
+          visual weight instead. */}
       <YStack gap={spacing.xs}>
         <XStack alignItems="center" gap={spacing.xs + 2}>
-          <Lightbulb
-            size={iconSizes.sm}
-            color={PAYWALL_GOLD.primary}
-            fill={PAYWALL_GOLD.primary}
-          />
+          <HelpCircle size={iconSizes.sm} color={PAYWALL_GOLD.primary} strokeWidth={2.5} />
           <Text.Title fontFamily={FONT_FAMILIES.extrabold} color={tc.title} letterSpacing={-0.5}>
             {t('hintStoreTitle')}
           </Text.Title>
@@ -232,7 +231,7 @@ export default function HintStoreScreen() {
             {justCredited ? (
               <Check size={iconSizes.md} color={PAYWALL_GOLD.primary} strokeWidth={2.4} />
             ) : (
-              <Lightbulb size={iconSizes.md} color={PAYWALL_GOLD.primary} />
+              <HelpCircle size={iconSizes.md} color={PAYWALL_GOLD.primary} />
             )}
           </View>
           <YStack flex={1} gap={2}>

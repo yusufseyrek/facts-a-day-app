@@ -37,7 +37,7 @@ import {
   Clock,
   Flame,
   Grid,
-  HelpCircle,
+  ListChecks,
   Shuffle,
   Tag,
   Zap,
@@ -245,7 +245,7 @@ function LifetimeBanner({
   // all-contrast signature is the anti-confetti device (and keeps the gold
   // Award icon from reading as paywall chrome).
   const cells = [
-    { Icon: HelpCircle, value: formatScore(answered), label: t('answered') },
+    { Icon: ListChecks, value: formatScore(answered), label: t('answered') },
     { Icon: Award, value: formatScore(perfectGames), label: t('perfectGames') },
     { Icon: Flame, value: String(bestStreak), label: t('dayStreak') },
     { Icon: Clock, value: timePlayed, label: t('timePlayed') },

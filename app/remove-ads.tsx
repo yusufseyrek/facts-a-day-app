@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { Text } from '../src/components';
-import { Ban, Check, Crown, Lightbulb, Music, WifiOff } from '../src/components/icons';
+import { Ban, Check, Crown, HelpCircle, Music, WifiOff } from '../src/components/icons';
 import { XStack, YStack } from '../src/components/Stacks';
 import { FONT_FAMILIES } from '../src/components/Typography';
 import { useFormSheetBottomPadding } from '../src/hooks/useFormSheetBottomPadding';
@@ -95,7 +95,7 @@ export default function RemoveAdsScreen() {
       description: t('paywallFeatureNoAdsDesc'),
     },
     {
-      icon: <Lightbulb size={iconSizes.md} color={PAYWALL_GOLD.primary} />,
+      icon: <HelpCircle size={iconSizes.md} color={PAYWALL_GOLD.primary} />,
       title: t('paywallFeatureHints'),
       description: t('paywallFeatureHintsDesc'),
     },

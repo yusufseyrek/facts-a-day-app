@@ -15,7 +15,7 @@ import {
   Check,
   Crown,
   Flame,
-  Lightbulb,
+  HelpCircle,
   Music,
   PartyPopper,
   WifiOff,
@@ -451,7 +451,7 @@ export default function PaywallScreen() {
       description: t('paywallFeatureNoAdsDesc'),
     },
     {
-      icon: <Lightbulb size={iconSizes.md} color={PAYWALL_GOLD.primary} />,
+      icon: <HelpCircle size={iconSizes.md} color={PAYWALL_GOLD.primary} />,
       title: t('paywallFeatureHints'),
       description: t('paywallFeatureHintsDesc'),
     },

@@ -6,7 +6,7 @@ import { hexColors, useTheme } from '../../theme';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { useResponsive } from '../../utils/useResponsive';
 import { DialogShell } from '../DialogShell';
-import { CheckCircle, Clock, Grid, HelpCircle, Play, Shuffle, Trophy, Zap } from '../icons';
+import { CheckCircle, Clock, Grid, ListChecks, Play, Shuffle, Trophy, Zap } from '../icons';
 import { XStack, YStack } from '../Stacks';
 import { FONT_FAMILIES, Text } from '../Typography';
 
@@ -176,7 +176,7 @@ export function TriviaIntroModal({
               justifyContent="center"
               alignItems="center"
             >
-              <HelpCircle size={typography.fontSize.title} color="#FFFFFF" strokeWidth={2.5} />
+              <ListChecks size={typography.fontSize.title} color="#FFFFFF" strokeWidth={2.5} />
             </YStack>
             <Text.Headline color={textColor}>{questionCount}</Text.Headline>
           </XStack>

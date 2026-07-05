@@ -29,7 +29,7 @@ import { absoluteFillObject } from '../../utils/styles';
 import { useResponsive } from '../../utils/useResponsive';
 import { CloseButton } from '../CloseButton';
 import { GlassSurface } from '../GlassSurface';
-import { ChevronLeft, ChevronRight, Lightbulb, Sparkles, Timer } from '../icons';
+import { ChevronLeft, ChevronRight, HelpCircle, Sparkles, Timer } from '../icons';
 import { XStack, YStack } from '../Stacks';
 import { FONT_FAMILIES, Text } from '../Typography';
 
@@ -446,7 +446,7 @@ export function TriviaGameView({
                             style={absoluteFillObject}
                           />
                         )}
-                        <Lightbulb size={typography.fontSize.caption} color={accentColor} />
+                        <HelpCircle size={typography.fontSize.caption} color={accentColor} />
                         <RNText
                           maxFontSizeMultiplier={maxFontSizeMultipliers.label}
                           style={{
@@ -492,7 +492,7 @@ export function TriviaGameView({
                             style={absoluteFillObject}
                           />
                         )}
-                        <Lightbulb size={typography.fontSize.caption} color={accentColor} />
+                        <HelpCircle size={typography.fontSize.caption} color={accentColor} />
                         <RNText
                           maxFontSizeMultiplier={maxFontSizeMultipliers.label}
                           style={{
@@ -588,7 +588,7 @@ export function TriviaGameView({
                               style={absoluteFillObject}
                             />
                           )}
-                          <Lightbulb size={typography.fontSize.caption} color={accentColor} />
+                          <HelpCircle size={typography.fontSize.caption} color={accentColor} />
                           <RNText
                             maxFontSizeMultiplier={maxFontSizeMultipliers.label}
                             style={{
@@ -632,7 +632,7 @@ export function TriviaGameView({
                             style={absoluteFillObject}
                           />
                         )}
-                        <Lightbulb size={typography.fontSize.caption} color={secondaryTextColor} />
+                        <HelpCircle size={typography.fontSize.caption} color={secondaryTextColor} />
                         <RNText
                           maxFontSizeMultiplier={maxFontSizeMultipliers.label}
                           style={{
@@ -662,7 +662,7 @@ export function TriviaGameView({
                       gap={spacing.xs}
                     >
                       <XStack alignItems="center" gap={spacing.xs}>
-                        <Lightbulb size={typography.fontSize.caption} color={accentColor} />
+                        <HelpCircle size={typography.fontSize.caption} color={accentColor} />
                         <Text.Caption fontFamily={FONT_FAMILIES.bold} color={accentColor}>
                           {t('hint') || 'Hint'}
                         </Text.Caption>
