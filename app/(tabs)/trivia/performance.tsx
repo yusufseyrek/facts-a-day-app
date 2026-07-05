@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Animated as RNAnimated,
@@ -9,9 +9,19 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated, {
+  Easing,
+  FadeIn,
+  FadeInDown,
+  ReduceMotion,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useNavigation } from 'expo-router';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -43,7 +53,7 @@ import { getEarnedBadges } from '../../../src/services/badges';
 import { useTabBarBannerInset } from '../../../src/services/tabBarBannerInset';
 import * as triviaService from '../../../src/services/trivia';
 import { hexColors, useTheme } from '../../../src/theme';
-import { hexToRgba } from '../../../src/utils/colors';
+import { blendHexColors, darkenColor, getContrastColor, hexToRgba } from '../../../src/utils/colors';
 import { getLucideIcon } from '../../../src/utils/iconMapper';
 import { absoluteFillObject, androidRipple } from '../../../src/utils/styles';
 import { useResponsive } from '../../../src/utils/useResponsive';
@@ -124,16 +134,11 @@ function PerfCard({
   isDark,
   padding,
   onPress,
-  fillRow = false,
 }: {
   children: React.ReactNode;
   isDark: boolean;
   padding?: number;
   onPress?: () => void;
-  /** flex:1 for cards sharing a horizontal row (the stat tiles). Standalone
-   * cards must NOT flex — flexBasis:0 collapses them inside auto-height
-   * parents. */
-  fillRow?: boolean;
 }) {
   const { spacing, radius } = useResponsive();
   const colors = isDark ? hexColors.dark : hexColors.light;
@@ -172,89 +177,330 @@ function PerfCard({
     return (
       <Pressable
         onPress={onPress}
-        style={({ pressed }) => [
-          ...frameStyle,
-          { opacity: pressed ? 0.7 : 1 },
-          fillRow && { flex: 1 },
-        ]}
+        style={({ pressed }) => [...frameStyle, { opacity: pressed ? 0.7 : 1 }]}
       >
         {body}
       </Pressable>
     );
   }
-  return <View style={[...frameStyle, fillRow && { flex: 1 }]}>{body}</View>;
+  return <View style={frameStyle}>{body}</View>;
+}
+
+/** Group thousands (4,210) without Intl, which is unreliable across RN
+ * engines (same helper as the leaderboard/profile). */
+function formatScore(n: number): string {
+  return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
 /**
- * One lifetime stat tile: tinted icon plate, headline value, quiet uppercase
- * label. Four of these form the top band — lifetime numbers the hub hero does
- * NOT show (the hero owns accuracy/quizzes/streak/rank; duplicating them here
- * was the old screen's failure mode).
+ * The lifetime band: ONE gradient banner holding the four lifetime stats the
+ * hub hero does NOT show (the hero owns accuracy/quizzes/current-streak/rank).
+ * Its gradient STARTS at the hub hero's END stop — darken(neonPurple, 0.22) —
+ * and runs into a deeper primary, so hub → performance reads as one gradient
+ * handed off and deepened rather than a clone. This is the only gradient card
+ * surface on the screen; the week/mode cards below stay quiet on purpose.
+ *
+ * LOAD-BEARING (same trap as TriviaStatsHero): both stops must stay darkened.
+ * Raw dark-mode neonPurple #A855F7 (luminance 0.503) flips getContrastColor
+ * to BLACK; darken(0.22)/darken(0.30) keep every stop white-contrast in both
+ * themes. contrastColor is computed at runtime from the actual start stop.
  */
-function StatTile({
-  icon,
-  color,
-  value,
-  label,
+function LifetimeBanner({
+  answered,
+  perfectGames,
+  bestStreak,
+  timePlayed,
   isDark,
+  animateIntro,
+  t,
 }: {
-  icon: React.ReactNode;
-  color: string;
-  value: string | number;
-  label: string;
+  answered: number;
+  perfectGames: number;
+  bestStreak: number;
+  timePlayed: string;
   isDark: boolean;
+  /** False when the dashboard remounts mid-visit (session-result peek):
+   * cells render settled, no entrance replay. */
+  animateIntro: boolean;
+  t: (key: TranslationKeys, params?: Record<string, string | number>) => string;
 }) {
-  const { spacing, radius, iconSizes, typography } = useResponsive();
+  const { spacing, radius, iconSizes, media } = useResponsive();
   const colors = isDark ? hexColors.dark : hexColors.light;
-  return (
-    <PerfCard isDark={isDark} padding={spacing.md} fillRow>
-      <YStack gap={spacing.sm}>
-        <View
-          style={{
-            width: iconSizes.xl,
-            height: iconSizes.xl,
-            borderRadius: radius.sm,
-            backgroundColor: `${color}20`,
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
+
+  const gradStart = darkenColor(colors.neonPurple, 0.22);
+  const gradEnd = darkenColor(colors.primary, 0.3);
+  const contrastColor = getContrastColor(gradStart);
+  const onDark = contrastColor === '#FFFFFF';
+  // Signature alphas from the hub hero / grid cards, branched on contrast.
+  const plateBg = onDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.12)';
+  const hairline = onDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.08)';
+  const circleA = onDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)';
+  const circleB = onDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.04)';
+  // Deco-circle driver — identical to the grid tiles / hub hero.
+  const s = media.topicCardSize * 0.7;
+  const glowColor = blendHexColors(colors.neonPurple, colors.primary, 0.5);
+
+  // All-contrast on purpose: no per-stat hues inside the banner. The hero's
+  // all-contrast signature is the anti-confetti device (and keeps the gold
+  // Award icon from reading as paywall chrome).
+  const cells = [
+    { Icon: HelpCircle, value: formatScore(answered), label: t('answered') },
+    { Icon: Award, value: formatScore(perfectGames), label: t('perfectGames') },
+    { Icon: Flame, value: String(bestStreak), label: t('dayStreak') },
+    { Icon: Clock, value: timePlayed, label: t('timePlayed') },
+  ];
+
+  // Stacked anatomy (plate above text), not inline: the text column then owns
+  // the full quadrant width, which is what lets long localized values
+  // ("3 Std. 24 Min.") and labels ("PERFEKTE QUIZZE") fit without truncating
+  // on small devices or at accessibility font scales.
+  const cell = (index: number) => {
+    const { Icon, value, label } = cells[index];
+    return (
+      <Animated.View
+        entering={
+          animateIntro
+            ? FadeInDown.delay(90 + index * 60)
+                .duration(350)
+                .reduceMotion(ReduceMotion.System)
+            : undefined
+        }
+        style={{ flex: 1 }}
+      >
+        <YStack
+          gap={spacing.sm}
+          paddingVertical={spacing.sm}
+          paddingHorizontal={spacing.sm}
+          accessible
+          accessibilityLabel={`${label}: ${value}`}
         >
-          {icon}
-        </View>
-        <YStack>
-          <Text.Title color={colors.text} fontFamily={FONT_FAMILIES.bold} numberOfLines={1}>
-            {value}
-          </Text.Title>
-          <Text.Tiny
-            color={colors.textMuted}
+          <YStack
+            width={iconSizes.xl}
+            height={iconSizes.xl}
+            borderRadius={iconSizes.xl / 2}
+            backgroundColor={plateBg}
+            justifyContent="center"
+            alignItems="center"
+          >
+            <Icon size={iconSizes.xs} color={contrastColor} />
+          </YStack>
+          <YStack>
+            <Text.Title color={contrastColor} fontFamily={FONT_FAMILIES.bold} numberOfLines={1}>
+              {value}
+            </Text.Title>
+            <Text.Tiny
+              color={contrastColor}
+              opacity={0.72}
+              textTransform="uppercase"
+              letterSpacing={0.8}
+              fontFamily={FONT_FAMILIES.semibold}
+              numberOfLines={2}
+            >
+              {label}
+            </Text.Tiny>
+          </YStack>
+        </YStack>
+      </Animated.View>
+    );
+  };
+
+  const vHairline = (
+    <YStack width={1} alignSelf="stretch" marginVertical={spacing.xs} backgroundColor={hairline} />
+  );
+
+  return (
+    <View style={[perfShadowStyles.banner, { borderRadius: radius.xl, shadowColor: glowColor }]}>
+      <LinearGradient
+        colors={[gradStart, gradEnd]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{ borderRadius: radius.xl, overflow: 'hidden' }}
+      >
+        {/* Layered deco circles — grid-card geometry, contrast-branched. */}
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            top: -s * 0.6,
+            right: -s * 0.5,
+            width: s * 1.8,
+            height: s * 1.8,
+            borderRadius: s * 0.9,
+            backgroundColor: circleA,
+          }}
+        />
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            bottom: -s * 0.7,
+            left: -s * 0.4,
+            width: s * 1.4,
+            height: s * 1.4,
+            borderRadius: s * 0.7,
+            backgroundColor: circleB,
+          }}
+        />
+        <YStack padding={spacing.lg} gap={spacing.sm}>
+          <Text.Caption
+            color={contrastColor}
+            opacity={0.85}
             textTransform="uppercase"
-            letterSpacing={0.8}
+            letterSpacing={1.4}
             fontFamily={FONT_FAMILIES.semibold}
             numberOfLines={1}
-            fontSize={typography.fontSize.tiny}
           >
-            {label}
-          </Text.Tiny>
+            {t('leaderboardAllTime')}
+          </Text.Caption>
+          <YStack>
+            <XStack>
+              {cell(0)}
+              {vHairline}
+              {cell(1)}
+            </XStack>
+            <View style={{ height: 1, backgroundColor: hairline, marginVertical: spacing.xs }} />
+            <XStack>
+              {cell(2)}
+              {vHairline}
+              {cell(3)}
+            </XStack>
+          </YStack>
         </YStack>
-      </YStack>
-    </PerfCard>
+      </LinearGradient>
+    </View>
   );
 }
 
-/** The trailing-week activity card: quiet label + this-week delta over the
- * 7-day bar strip (carried over from the old overview card). */
+/**
+ * One day column of the activity strip. Owns its grow animation, latched to
+ * the screen's intro: plays once on the visit's first dashboard reveal.
+ * Data refreshes don't remount rows (no replay), and remounts caused by the
+ * session-results peek (the early-return branch swaps the whole dashboard
+ * out and back) arrive with animateIntro=false, so they render settled.
+ * Today's bar carries the hub ring's soft-halo quote — a translucent
+ * under-mark, NOT a shadow, so Android draws no elevation box.
+ */
+function WeekBar({
+  label,
+  count,
+  target,
+  isToday,
+  index,
+  isDark,
+  animateIntro,
+}: {
+  label: string;
+  count: number;
+  target: number;
+  isToday: boolean;
+  index: number;
+  isDark: boolean;
+  animateIntro: boolean;
+}) {
+  const { spacing, radius, typography } = useResponsive();
+  const colors = isDark ? hexColors.dark : hexColors.light;
+  const active = count > 0;
+
+  // Latched at mount: a later prop flip must not re-trigger the theater.
+  const shouldAnimate = React.useRef(animateIntro).current;
+  const grow = useSharedValue(shouldAnimate ? 0 : 1);
+  useEffect(() => {
+    if (!shouldAnimate || !active) return; // idle days schedule nothing
+    grow.value = withDelay(
+      index * 45,
+      withTiming(1, {
+        duration: 500,
+        easing: Easing.out(Easing.cubic),
+        reduceMotion: ReduceMotion.System,
+      }),
+      // Third arg: reduce-motion must skip the stagger too, not just the tween.
+      ReduceMotion.System
+    );
+  }, [shouldAnimate, active, index, grow]);
+
+  const growStyle = useAnimatedStyle(() => ({ transform: [{ scaleY: grow.value }] }));
+
+  return (
+    <YStack flex={1} alignItems="center" gap={spacing.xs}>
+      {active ? (
+        <Animated.View
+          style={[
+            {
+              // Today widens to host the halo; the gradient bar inside stays
+              // at the other bars' visual width (0.85 × 0.65 ≈ 0.55).
+              width: isToday ? '85%' : '55%',
+              height: target,
+              alignItems: 'center',
+              transformOrigin: 'bottom',
+            },
+            growStyle,
+          ]}
+        >
+          {isToday && (
+            <View
+              style={[
+                absoluteFillObject,
+                {
+                  borderRadius: radius.full,
+                  backgroundColor: hexToRgba(colors.primary, isDark ? 0.28 : 0.18),
+                },
+              ]}
+            />
+          )}
+          <View
+            style={{
+              width: isToday ? '65%' : '100%',
+              height: '100%',
+              borderRadius: radius.full,
+              overflow: 'hidden',
+            }}
+          >
+            <LinearGradient
+              colors={[colors.primary, darkenColor(colors.primary, 0.22)]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={{ flex: 1 }}
+            />
+          </View>
+        </Animated.View>
+      ) : (
+        <View
+          style={{
+            width: '55%',
+            height: spacing.xs,
+            borderRadius: radius.full,
+            backgroundColor: colors.border,
+          }}
+        />
+      )}
+      <Text.Tiny
+        color={isToday ? colors.primary : colors.textMuted}
+        fontFamily={isToday ? FONT_FAMILIES.semibold : undefined}
+        fontSize={typography.fontSize.tiny}
+        maxFontSizeMultiplier={1}
+      >
+        {label}
+      </Text.Tiny>
+    </YStack>
+  );
+}
+
+/** The trailing-week activity card: quiet label + this-week pill over the
+ * 7-day strip of grow-in gradient bars (today haloed + tinted initial). */
 function WeeklyActivityCard({
   weeklyActivity,
   testsThisWeek,
   isDark,
+  animateIntro,
   t,
 }: {
   weeklyActivity: { date: string; count: number }[];
   testsThisWeek: number;
   isDark: boolean;
+  animateIntro: boolean;
   t: (key: TranslationKeys, params?: Record<string, string | number>) => string;
 }) {
-  const { spacing, radius, typography } = useResponsive();
+  const { spacing, radius } = useResponsive();
   const colors = isDark ? hexColors.dark : hexColors.light;
   const maxDayCount = Math.max(1, ...weeklyActivity.map((d) => d.count));
   const stripHeight = spacing.xl + spacing.md;
@@ -264,6 +510,17 @@ function WeeklyActivityCard({
     const d = new Date(`${isoDate}T12:00:00`);
     return d.toLocaleDateString(undefined, { weekday: 'narrow' });
   };
+
+  // Today by LOCAL date-string match (the service builds the identical
+  // padded local key, so a miss can only mean the data window predates the
+  // current local day — e.g. resumed after midnight without a refetch). No
+  // positional fallback: mislabeling yesterday as TODAY is worse than
+  // highlighting nothing until the next load rolls the strip forward.
+  const now = new Date();
+  const todayLocal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
+    now.getDate()
+  ).padStart(2, '0')}`;
+  const todayIndex = weeklyActivity.findIndex((d) => d.date === todayLocal);
 
   return (
     <PerfCard isDark={isDark}>
@@ -278,37 +535,31 @@ function WeeklyActivityCard({
             {t('last7Days')}
           </Text.Tiny>
           {testsThisWeek > 0 && (
-            <Text.Caption color={colors.primary} fontFamily={FONT_FAMILIES.semibold}>
-              {t('thisWeek', { count: testsThisWeek })}
-            </Text.Caption>
+            <XStack
+              paddingHorizontal={spacing.sm}
+              paddingVertical={2}
+              borderRadius={radius.full}
+              backgroundColor={hexToRgba(colors.primary, isDark ? 0.16 : 0.1)}
+            >
+              <Text.Caption color={colors.primary} fontFamily={FONT_FAMILIES.semibold}>
+                {t('thisWeek', { count: testsThisWeek })}
+              </Text.Caption>
+            </XStack>
           )}
         </XStack>
         <XStack gap={spacing.sm} alignItems="flex-end">
-          {weeklyActivity.map((day) => {
-            const active = day.count > 0;
-            const barHeight = active
-              ? Math.max(stripHeight * 0.3, (day.count / maxDayCount) * stripHeight)
-              : spacing.xs;
-            return (
-              <YStack key={day.date} flex={1} alignItems="center" gap={spacing.xs}>
-                <View
-                  style={{
-                    width: '55%',
-                    height: barHeight,
-                    borderRadius: radius.full,
-                    backgroundColor: active ? colors.primary : colors.border,
-                  }}
-                />
-                <Text.Tiny
-                  color={colors.textMuted}
-                  fontSize={typography.fontSize.tiny}
-                  maxFontSizeMultiplier={1}
-                >
-                  {dayInitial(day.date)}
-                </Text.Tiny>
-              </YStack>
-            );
-          })}
+          {weeklyActivity.map((day, index) => (
+            <WeekBar
+              key={day.date}
+              label={dayInitial(day.date)}
+              count={day.count}
+              target={Math.max(stripHeight * 0.3, (day.count / maxDayCount) * stripHeight)}
+              isToday={index === todayIndex}
+              index={index}
+              isDark={isDark}
+              animateIntro={animateIntro}
+            />
+          ))}
         </XStack>
       </YStack>
     </PerfCard>
@@ -344,60 +595,146 @@ const MODE_LABEL_KEY: Record<ModeBreakdownRow['mode'], TranslationKeys> = {
   category: 'categoryMode',
 };
 
-/** Per-mode play volume + accuracy rows. */
-function ModeBreakdownCard({
-  rows,
+/**
+ * One mode row: the established plate/name/figures anatomy plus a thin
+ * animated gradient accuracy RAIL in the row's hue. Deliberately thinner
+ * (spacing.xs) than the category card's flat bars (spacing.sm) below, so the
+ * two blocks read differently at a glance. The fill sweep is latched to the
+ * screen's intro (see WeekBar): plays once on the visit's first dashboard
+ * reveal, never on data refreshes or session-peek remounts.
+ */
+function ModeRow({
+  row,
+  index,
   isDark,
+  animateIntro,
   t,
 }: {
-  rows: ModeBreakdownRow[];
+  row: ModeBreakdownRow;
+  index: number;
   isDark: boolean;
+  animateIntro: boolean;
   t: (key: TranslationKeys, params?: Record<string, string | number>) => string;
 }) {
   const { spacing, radius, iconSizes, typography } = useResponsive();
   const colors = isDark ? hexColors.dark : hexColors.light;
+  const { Icon, color } = modeVisual(row.mode, isDark);
+
+  const hasFill = row.accuracy > 0;
+  const shouldAnimate = React.useRef(animateIntro).current;
+  const fill = useSharedValue(shouldAnimate ? 0 : 1);
+  useEffect(() => {
+    if (!shouldAnimate || !hasFill) return; // 0% rows keep a bare track, schedule nothing
+    fill.value = withDelay(
+      index * 60,
+      withTiming(1, {
+        duration: 600,
+        easing: Easing.out(Easing.cubic),
+        reduceMotion: ReduceMotion.System,
+      }),
+      ReduceMotion.System
+    );
+  }, [shouldAnimate, hasFill, index, fill]);
+
+  // Width stays the static percent and only scaleX animates, so the
+  // gradient's endpoint hue is correct at every frame of the sweep.
+  const fillStyle = useAnimatedStyle(() => ({ transform: [{ scaleX: fill.value }] }));
+
+  return (
+    <XStack alignItems="center" gap={spacing.sm}>
+      <View
+        style={{
+          width: iconSizes.xl,
+          height: iconSizes.xl,
+          borderRadius: radius.sm,
+          backgroundColor: `${color}20`,
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
+        <Icon size={iconSizes.xs} color={color} />
+      </View>
+      <YStack flex={1}>
+        <Text.Label color={colors.text} fontFamily={FONT_FAMILIES.medium} numberOfLines={1}>
+          {t(MODE_LABEL_KEY[row.mode])}
+        </Text.Label>
+        <Text.Caption color={colors.textMuted} fontSize={typography.fontSize.tiny}>
+          {t('leaderboardGamesCount', { count: String(row.games) })}
+        </Text.Caption>
+        <View
+          style={{
+            marginTop: spacing.xs,
+            height: spacing.xs,
+            borderRadius: radius.full,
+            backgroundColor: colors.border,
+            overflow: 'hidden',
+            width: '100%',
+          }}
+        >
+          {hasFill && (
+            <Animated.View
+              style={[
+                {
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: `${row.accuracy}%`,
+                  borderRadius: radius.full,
+                  overflow: 'hidden',
+                  transformOrigin: 'left',
+                },
+                fillStyle,
+              ]}
+            >
+              <LinearGradient
+                colors={[color, darkenColor(color, 0.22)]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={{ flex: 1 }}
+              />
+            </Animated.View>
+          )}
+        </View>
+      </YStack>
+      <YStack alignItems="flex-end">
+        <Text.Label color={colors.text} fontFamily={FONT_FAMILIES.bold}>
+          {`${row.accuracy}%`}
+        </Text.Label>
+        <Text.Caption color={colors.textMuted} fontSize={typography.fontSize.tiny}>
+          {`${row.correct}/${row.answered}`}
+        </Text.Caption>
+      </YStack>
+    </XStack>
+  );
+}
+
+/** Per-mode play volume + accuracy rows. */
+function ModeBreakdownCard({
+  rows,
+  isDark,
+  animateIntro,
+  t,
+}: {
+  rows: ModeBreakdownRow[];
+  isDark: boolean;
+  animateIntro: boolean;
+  t: (key: TranslationKeys, params?: Record<string, string | number>) => string;
+}) {
+  const { spacing } = useResponsive();
   return (
     <PerfCard isDark={isDark}>
       <YStack gap={spacing.lg}>
-        {rows.map((row) => {
-          const { Icon, color } = modeVisual(row.mode, isDark);
-          return (
-            <XStack key={row.mode} alignItems="center" gap={spacing.sm}>
-              <View
-                style={{
-                  width: iconSizes.xl,
-                  height: iconSizes.xl,
-                  borderRadius: radius.sm,
-                  backgroundColor: `${color}20`,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                <Icon size={iconSizes.xs} color={color} />
-              </View>
-              <YStack flex={1}>
-                <Text.Label
-                  color={colors.text}
-                  fontFamily={FONT_FAMILIES.medium}
-                  numberOfLines={1}
-                >
-                  {t(MODE_LABEL_KEY[row.mode])}
-                </Text.Label>
-                <Text.Caption color={colors.textMuted} fontSize={typography.fontSize.tiny}>
-                  {t('leaderboardGamesCount', { count: String(row.games) })}
-                </Text.Caption>
-              </YStack>
-              <YStack alignItems="flex-end">
-                <Text.Label color={colors.text} fontFamily={FONT_FAMILIES.bold}>
-                  {`${row.accuracy}%`}
-                </Text.Label>
-                <Text.Caption color={colors.textMuted} fontSize={typography.fontSize.tiny}>
-                  {`${row.correct}/${row.answered}`}
-                </Text.Caption>
-              </YStack>
-            </XStack>
-          );
-        })}
+        {rows.map((row, index) => (
+          <ModeRow
+            key={row.mode}
+            row={row}
+            index={index}
+            isDark={isDark}
+            animateIntro={animateIntro}
+            t={t}
+          />
+        ))}
       </YStack>
     </PerfCard>
   );
@@ -661,6 +998,15 @@ const perfShadowStyles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
+  // The lifetime banner's glow — hub-hero shadow recipe; shadowColor is
+  // overridden inline with the purple/primary blend.
+  banner: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 6,
+  },
 });
 
 export default function PerformanceScreen() {
@@ -670,7 +1016,7 @@ export default function PerformanceScreen() {
   const navigation = useNavigation();
   const params = useLocalSearchParams<{ sessionId?: string }>();
   const isDark = theme === 'dark';
-  const { iconSizes, spacing, radius } = useResponsive();
+  const { iconSizes, spacing } = useResponsive();
   const bannerInset = useTabBarBannerInset();
 
   const [loading, setLoading] = useState(true);
@@ -778,6 +1124,14 @@ export default function PerformanceScreen() {
     setSelectedSession(null);
   }, []);
 
+  // The entrance theater (banner cells, week bars, mode rails) plays once per
+  // screen VISIT, not per dashboard mount: peeking a session's results takes
+  // the early-return branch below, which unmounts and later remounts the
+  // whole dashboard subtree — without this latch every peek would replay the
+  // full ~1s choreography.
+  const introPlayedRef = React.useRef(false);
+  const animateIntro = !introPlayedRef.current;
+
   // TriviaResults renders under the SAME native header as the rest of the
   // stack: keep the header, retitle it, and point its back chevron at the
   // results' close handler instead of popping the screen.
@@ -786,6 +1140,12 @@ export default function PerformanceScreen() {
     selectedSession.questions &&
     selectedSession.answers
   );
+
+  // Latch the intro after the dashboard's first real render (spinner and
+  // results branches don't count — they never showed the theater).
+  React.useEffect(() => {
+    if (!loading && !showingResults) introPlayedRef.current = true;
+  }, [loading, showingResults]);
   React.useEffect(() => {
     if (showingResults) {
       navigation.setOptions({
@@ -921,46 +1281,21 @@ export default function PerformanceScreen() {
           <YStack marginVertical={spacing.lg} gap={spacing.xl}>
             {/* Lifetime band — the numbers the hub hero does NOT carry. The
                 hero (accuracy ring / quizzes / streak / rank) stays the
-                at-a-glance card; this screen is the deep dive, so repeating
-                the dial here was dropped. */}
+                at-a-glance card; this screen is the deep dive. One gradient
+                banner (the screen's single loud surface), all-contrast. */}
             <Animated.View
               entering={FadeIn.delay(50).duration(400).springify()}
               needsOffscreenAlphaCompositing={Platform.OS === 'android'}
             >
-              <YStack gap={spacing.md}>
-                <XStack gap={spacing.md}>
-                  <StatTile
-                    icon={<HelpCircle size={iconSizes.xs} color={primaryColor} />}
-                    color={primaryColor}
-                    value={stats?.totalAnswered ?? 0}
-                    label={t('answered')}
-                    isDark={isDark}
-                  />
-                  <StatTile
-                    icon={<Award size={iconSizes.xs} color={colors.warning} />}
-                    color={colors.warning}
-                    value={lifetime.perfectGames}
-                    label={t('perfectGames')}
-                    isDark={isDark}
-                  />
-                </XStack>
-                <XStack gap={spacing.md}>
-                  <StatTile
-                    icon={<Flame size={iconSizes.xs} color={colors.neonOrange} />}
-                    color={colors.neonOrange}
-                    value={stats?.bestStreak ?? 0}
-                    label={t('dayStreak')}
-                    isDark={isDark}
-                  />
-                  <StatTile
-                    icon={<Clock size={iconSizes.xs} color={colors.neonPurple} />}
-                    color={colors.neonPurple}
-                    value={formatPlayTime(lifetime.totalPlaySeconds)}
-                    label={t('timePlayed')}
-                    isDark={isDark}
-                  />
-                </XStack>
-              </YStack>
+              <LifetimeBanner
+                answered={stats?.totalAnswered ?? 0}
+                perfectGames={lifetime.perfectGames}
+                bestStreak={stats?.bestStreak ?? 0}
+                timePlayed={formatPlayTime(lifetime.totalPlaySeconds)}
+                isDark={isDark}
+                animateIntro={animateIntro}
+                t={t}
+              />
             </Animated.View>
 
             {/* Trailing week activity */}
@@ -972,6 +1307,7 @@ export default function PerformanceScreen() {
                 weeklyActivity={weeklyActivity}
                 testsThisWeek={stats?.testsThisWeek ?? 0}
                 isDark={isDark}
+                animateIntro={animateIntro}
                 t={t}
               />
             </Animated.View>
@@ -984,7 +1320,12 @@ export default function PerformanceScreen() {
               >
                 <YStack gap={spacing.md}>
                   <Text.Title color={textColor}>{t('byMode')}</Text.Title>
-                  <ModeBreakdownCard rows={modeBreakdown} isDark={isDark} t={t} />
+                  <ModeBreakdownCard
+                    rows={modeBreakdown}
+                    isDark={isDark}
+                    animateIntro={animateIntro}
+                    t={t}
+                  />
                 </YStack>
               </Animated.View>
             )}
