@@ -1272,6 +1272,19 @@ function PerformanceSkeleton({ isDark }: { isDark: boolean }) {
   );
 }
 
+/**
+ * Skeleton reveal heuristic (the Suspense "just-noticeable delay" pair).
+ * The dashboard reads local SQLite, which usually lands in a few dozen ms —
+ * painting the skeleton immediately and swapping it out two frames later
+ * reads as a flash on every open. So: loads faster than DELAY show no
+ * loader at all (the push transition covers the gap and the content
+ * entrance plays as the screen settles), and once the skeleton IS shown it
+ * stays up for MIN_VISIBLE so a load landing just past the delay doesn't
+ * flash skeleton→content within a few frames either.
+ */
+const SKELETON_DELAY_MS = 300;
+const SKELETON_MIN_VISIBLE_MS = 500;
+
 export default function PerformanceScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
@@ -1283,6 +1296,11 @@ export default function PerformanceScreen() {
   const bannerInset = useTabBarBannerInset();
 
   const [loading, setLoading] = useState(true);
+  // What the loading window shows: 'blank' → (only if slow) 'skeleton' →
+  // 'content'. Never regresses; 'content' is only reachable once loading is
+  // false, so the dashboard always renders real data.
+  const [phase, setPhase] = useState<'blank' | 'skeleton' | 'content'>('blank');
+  const skeletonShownAtRef = React.useRef(0);
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState<TriviaStats | null>(null);
   const [lifetime, setLifetime] = useState<{ perfectGames: number; totalPlaySeconds: number }>({
@@ -1348,6 +1366,32 @@ export default function PerformanceScreen() {
     }, [loadData])
   );
 
+  // Drives the reveal phase (see SKELETON_DELAY_MS). Branching on phase, not
+  // loading, is what prevents the flash frames: a fast load goes blank →
+  // content without ever mounting the skeleton, and a load that lands while
+  // the skeleton is up keeps rendering it until MIN_VISIBLE elapses — the
+  // dashboard never mounts for a frame just to be replaced.
+  useEffect(() => {
+    if (loading) {
+      if (phase !== 'blank') return;
+      const timer = setTimeout(() => {
+        skeletonShownAtRef.current = Date.now();
+        setPhase('skeleton');
+      }, SKELETON_DELAY_MS);
+      return () => clearTimeout(timer);
+    }
+    if (phase === 'skeleton') {
+      const remaining = SKELETON_MIN_VISIBLE_MS - (Date.now() - skeletonShownAtRef.current);
+      if (remaining <= 0) {
+        setPhase('content');
+        return;
+      }
+      const timer = setTimeout(() => setPhase('content'), remaining);
+      return () => clearTimeout(timer);
+    }
+    if (phase === 'blank') setPhase('content');
+  }, [loading, phase]);
+
   // Auto-open session results when navigated with sessionId param
   const autoOpenedRef = React.useRef(false);
   React.useEffect(() => {
@@ -1404,11 +1448,13 @@ export default function PerformanceScreen() {
     selectedSession.answers
   );
 
-  // Latch the intro after the dashboard's first real render (spinner and
-  // results branches don't count — they never showed the theater).
+  // Latch the intro after the dashboard's first real render (blank/skeleton
+  // and results branches don't count — they never showed the theater). Keyed
+  // on phase, NOT loading: loading flips false a cycle before the dashboard
+  // mounts, and latching then would skip the choreography entirely.
   React.useEffect(() => {
-    if (!loading && !showingResults) introPlayedRef.current = true;
-  }, [loading, showingResults]);
+    if (phase === 'content' && !showingResults) introPlayedRef.current = true;
+  }, [phase, showingResults]);
   React.useEffect(() => {
     if (showingResults) {
       navigation.setOptions({
@@ -1455,20 +1501,27 @@ export default function PerformanceScreen() {
       : t('durationMinutes', { minutes: totalMinutes });
   };
 
-  if (loading) {
+  if (phase !== 'content') {
     return (
       <View style={{ flex: 1, backgroundColor: bgColor }}>
         <StatusBar style={isDark ? 'light' : 'dark'} />
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          overScrollMode="never"
-          contentInsetAdjustmentBehavior="automatic"
-          contentContainerStyle={{ paddingBottom: bannerInset }}
-        >
-          <ContentContainer>
-            <PerformanceSkeleton isDark={isDark} />
-          </ContentContainer>
-        </ScrollView>
+        {phase === 'skeleton' && (
+          <Animated.View
+            entering={FadeIn.duration(180).reduceMotion(ReduceMotion.System)}
+            style={{ flex: 1 }}
+          >
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              overScrollMode="never"
+              contentInsetAdjustmentBehavior="automatic"
+              contentContainerStyle={{ paddingBottom: bannerInset }}
+            >
+              <ContentContainer>
+                <PerformanceSkeleton isDark={isDark} />
+              </ContentContainer>
+            </ScrollView>
+          </Animated.View>
+        )}
       </View>
     );
   }
