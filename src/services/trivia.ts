@@ -246,28 +246,87 @@ export async function getCategoryTriviaQuestions(
  * can't be attributed to categories locally and simply don't count here.
  */
 export async function getCategoriesWithProgress(language: string): Promise<CategoryWithProgress[]> {
-  const [selectedCategories, metadata, sessionAggregates] = await Promise.all([
+  const [selectedCategories, metadata, aggregates] = await Promise.all([
     onboardingService.getSelectedCategories(),
     api.getMetadata(language),
-    database.getCategorySessionAggregates().catch(() => []),
+    database.getCategoryAccuracyAggregates().catch(() => []),
   ]);
-  const bySlug = new Map(sessionAggregates.map((a) => [a.category_slug, a]));
+  const bySlug = new Map(aggregates.map((a) => [a.category_slug, a]));
   return metadata.categories
     .filter((cat) => selectedCategories.includes(cat.slug))
-    .map((cat) => {
-      const agg = bySlug.get(cat.slug);
-      const answered = agg?.answered ?? 0;
-      const correct = agg?.correct ?? 0;
+    .map((cat) => withAggregates(cat as Category, bySlug.get(cat.slug)));
+}
+
+/**
+ * Accuracy per category from PLAY HISTORY alone — every category the user has
+ * ever answered in, whether or not it's in their current interest selection.
+ * This feeds the stats surfaces (performance screen, accuracy-by-category
+ * list); the hub grid keeps the selection-filtered variant above, because it
+ * doubles as the "what can I play" list. Stats must never vanish because the
+ * user later trimmed their interests.
+ */
+export async function getCategoryAccuracy(language: string): Promise<CategoryWithProgress[]> {
+  const [metadata, aggregates] = await Promise.all([
+    api.getMetadata(language),
+    database.getCategoryAccuracyAggregates().catch(() => []),
+  ]);
+  const bySlug = new Map(aggregates.map((a) => [a.category_slug, a]));
+  return metadata.categories
+    .filter((cat) => (bySlug.get(cat.slug)?.answered ?? 0) > 0)
+    .map((cat) => withAggregates(cat as Category, bySlug.get(cat.slug)));
+}
+
+function withAggregates(
+  cat: Category,
+  agg: { answered: number; correct: number } | undefined
+): CategoryWithProgress {
+  const answered = agg?.answered ?? 0;
+  const correct = agg?.correct ?? 0;
+  return {
+    ...cat,
+    mastered: 0,
+    total: 0,
+    answered,
+    correct,
+    accuracy: answered > 0 ? Math.round((correct / answered) * 100) : 0,
+    isComplete: false,
+  };
+}
+
+/** Per-mode games + accuracy for the performance screen. Legacy 'quick'
+ * sessions (the removed Quick Quiz) fold into 'mixed'. */
+export async function getModeBreakdown(): Promise<
+  { mode: 'daily' | 'mixed' | 'true_false' | 'multiple_choice' | 'category'; games: number; answered: number; correct: number; accuracy: number }[]
+> {
+  const rows = await database.getModeAggregates();
+  const byMode = new Map<string, { games: number; answered: number; correct: number }>();
+  for (const row of rows) {
+    const mode = row.trivia_mode === 'quick' ? 'mixed' : row.trivia_mode;
+    const existing = byMode.get(mode) ?? { games: 0, answered: 0, correct: 0 };
+    existing.games += row.games;
+    existing.answered += row.answered;
+    existing.correct += row.correct;
+    byMode.set(mode, existing);
+  }
+  const order = ['daily', 'mixed', 'true_false', 'multiple_choice', 'category'] as const;
+  return order
+    .filter((mode) => byMode.has(mode))
+    .map((mode) => {
+      const agg = byMode.get(mode)!;
       return {
-        ...(cat as Category),
-        mastered: 0,
-        total: 0,
-        answered,
-        correct,
-        accuracy: answered > 0 ? Math.round((correct / answered) * 100) : 0,
-        isComplete: false,
+        mode,
+        ...agg,
+        accuracy: agg.answered > 0 ? Math.round((agg.correct / agg.answered) * 100) : 0,
       };
     });
+}
+
+/** Lifetime perfect-game count + total play time (seconds). */
+export async function getLifetimeExtras(): Promise<{
+  perfectGames: number;
+  totalPlaySeconds: number;
+}> {
+  return database.getLifetimeSessionExtras();
 }
 
 /** Sessions per local day for the trailing week — the activity strip. */
@@ -278,15 +337,24 @@ export async function getWeeklyActivity(): Promise<{ date: string; count: number
 // ====== QUESTION ATTEMPTS ======
 
 /**
- * Record an answer to a question
+ * Record an answer to a question. `categorySlug` is the QUESTION's category
+ * (question.fact.category) — recorded for every mode so accuracy-by-category
+ * reflects all play, not just category-mode games.
  */
 export async function recordAnswer(
   questionId: number,
   isCorrect: boolean,
   triviaMode: database.LocalTriviaMode,
-  triviaSessionId?: number
+  triviaSessionId?: number,
+  categorySlug?: string | null
 ): Promise<void> {
-  await database.recordQuestionAttempt(questionId, isCorrect, triviaMode, triviaSessionId);
+  await database.recordQuestionAttempt(
+    questionId,
+    isCorrect,
+    triviaMode,
+    triviaSessionId,
+    categorySlug
+  );
 }
 
 // ====== STATISTICS ======

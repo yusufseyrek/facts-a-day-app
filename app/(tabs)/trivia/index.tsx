@@ -197,7 +197,9 @@ export default function TriviaScreen() {
   }, [loadTriviaData]);
 
   // Leaderboard entry lives in the native header (right side); shows the
-  // viewer's all-time rank when they have one.
+  // viewer's all-time rank when they have one. The header hosts ONLY the
+  // trophy — the hint balance lives on the Game Modes section row below,
+  // decoupled from the leaderboard entry.
   //
   // Everywhere except Mac: the RN trophy + "#rank" row hosted in the header —
   // the original design; header-hosted RN views receive touches fine on
@@ -217,24 +219,8 @@ export default function TriviaScreen() {
     const trophyColor = allTimeRank !== null ? rankedColor : secondaryTextColor;
     const openLeaderboard = () => router.push('/(tabs)/trivia/leaderboard');
 
-    // Hint-store entry rides in the header next to the trophy (it replaced a
-    // full-width hub row). Same gate as the old row: hidden until packs are
-    // purchasable or a balance exists, so it never dead-ends. The hub header
-    // hosts no queue button (deliberately — see trivia/_layout), so the pair
-    // never collides with the audio player.
-    const showHints = hintPacksAvailable || hintBalance > 0;
-    const hintColor =
-      hintBalance > 0
-        ? isDark
-          ? hexColors.dark.primary
-          : hexColors.light.primary
-        : secondaryTextColor;
-    const openHintStore = () => router.push('/hint-store?source=trivia_hub');
-
     if (Platform.OS === 'ios' && isMacOS()) {
       navigation.setOptions({
-        // First array item renders rightmost (UIBarButtonItem order): trophy
-        // keeps the outer edge, hints slot in beside it.
         unstable_headerRightItems: () => [
           {
             type: 'button' as const,
@@ -253,95 +239,39 @@ export default function TriviaScreen() {
             }),
             onPress: openLeaderboard,
           },
-          ...(showHints
-            ? [
-                {
-                  type: 'button' as const,
-                  label: t('hintStoreTitle'),
-                  icon: { type: 'sfSymbol' as const, name: 'lightbulb' as const },
-                  tintColor: hintColor,
-                  hidesSharedBackground: true,
-                  ...(hintBalance > 0 && {
-                    badge: {
-                      value: String(hintBalance),
-                      style: {
-                        backgroundColor: hintColor,
-                        fontFamily: FONT_FAMILIES.semibold,
-                      },
-                    },
-                  }),
-                  onPress: openHintStore,
-                },
-              ]
-            : []),
         ],
       });
     } else {
       navigation.setOptions({
         headerRight: () => (
-          <XStack alignItems="center" gap={spacing.xs}>
-            {/* Bare icons + numbers: no chip background — inside the iOS 26
-                glass header a filled pill reads as a stray box. Padding kept
-                for the touch targets. */}
-            {showHints && (
-              <Pressable
-                testID="trivia-header-hints-button"
-                onPress={openHintStore}
-                accessibilityRole="button"
-                accessibilityLabel={t('hintStoreTitle')}
-                style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
-              >
-                <XStack
-                  alignItems="center"
-                  gap={spacing.xs}
-                  paddingHorizontal={spacing.sm}
-                  paddingVertical={spacing.xs}
-                >
-                  <Lightbulb size={iconSizes.sm} color={hintColor} />
-                  {hintBalance > 0 && (
-                    <Text.Label fontFamily={FONT_FAMILIES.semibold} color={hintColor}>
-                      {String(hintBalance)}
-                    </Text.Label>
-                  )}
-                </XStack>
-              </Pressable>
-            )}
-            <Pressable
-              testID="trivia-header-trophy-button"
-              onPress={openLeaderboard}
-              accessibilityRole="button"
-              accessibilityLabel={t('leaderboard')}
-              style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          /* Bare icon + number: no chip background — inside the iOS 26
+             glass header a filled pill reads as a stray box. Padding kept
+             for the touch target. */
+          <Pressable
+            testID="trivia-header-trophy-button"
+            onPress={openLeaderboard}
+            accessibilityRole="button"
+            accessibilityLabel={t('leaderboard')}
+            style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          >
+            <XStack
+              alignItems="center"
+              gap={spacing.xs}
+              paddingHorizontal={spacing.sm}
+              paddingVertical={spacing.xs}
             >
-              <XStack
-                alignItems="center"
-                gap={spacing.xs}
-                paddingHorizontal={spacing.sm}
-                paddingVertical={spacing.xs}
-              >
-                <Trophy size={iconSizes.sm} color={trophyColor} />
-                {allTimeRank !== null && (
-                  <Text.Label fontFamily={FONT_FAMILIES.semibold} color={trophyColor}>
-                    {`#${allTimeRank}`}
-                  </Text.Label>
-                )}
-              </XStack>
-            </Pressable>
-          </XStack>
+              <Trophy size={iconSizes.sm} color={trophyColor} />
+              {allTimeRank !== null && (
+                <Text.Label fontFamily={FONT_FAMILIES.semibold} color={trophyColor}>
+                  {`#${allTimeRank}`}
+                </Text.Label>
+              )}
+            </XStack>
+          </Pressable>
         ),
       });
     }
-  }, [
-    navigation,
-    allTimeRank,
-    isDark,
-    router,
-    spacing,
-    iconSizes,
-    t,
-    hintBalance,
-    hintPacksAvailable,
-  ]);
+  }, [navigation, allTimeRank, isDark, router, spacing, iconSizes, t]);
 
   // Show intro modal before starting trivia. Trivia is free — no premium gate.
   const showDailyTriviaIntro = () => {
@@ -489,20 +419,66 @@ export default function TriviaScreen() {
                 loads never hide an already-visible grid. */}
             {categoriesLoading ? null : showModes ? (
               <>
-                {/* Section title */}
+                {/* Section title row. The hint wallet rides here as a quiet
+                    pill — next to the modes where hints get spent, decoupled
+                    from the header's leaderboard trophy. Same gate as the old
+                    header button: hidden until packs are purchasable or a
+                    balance exists, so it never dead-ends. */}
                 <Animated.View
                   entering={FadeInDown.delay(100).duration(300)}
                   needsOffscreenAlphaCompositing={Platform.OS === 'android'}
                 >
-                  <Text.Body
-                    color={textColor}
-                    fontFamily={FONT_FAMILIES.semibold}
+                  <XStack
+                    alignItems="center"
+                    justifyContent="space-between"
                     marginTop={spacing.xxl}
                     marginBottom={spacing.md}
                     marginLeft={spacing.sm}
+                    gap={spacing.md}
                   >
-                    {t('triviaGameModes')}
-                  </Text.Body>
+                    <Text.Body
+                      flex={1}
+                      color={textColor}
+                      fontFamily={FONT_FAMILIES.semibold}
+                      numberOfLines={1}
+                    >
+                      {t('triviaGameModes')}
+                    </Text.Body>
+                    {(hintPacksAvailable || hintBalance > 0) && (
+                      <Pressable
+                        testID="trivia-hints-pill"
+                        onPress={() => router.push('/hint-store?source=trivia_hub')}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('hintStoreTitle')}
+                        style={({ pressed }) => ({
+                          opacity: pressed ? 0.7 : 1,
+                          transform: [{ scale: pressed ? 0.96 : 1 }],
+                        })}
+                      >
+                        <XStack
+                          alignItems="center"
+                          gap={spacing.xs}
+                          paddingHorizontal={spacing.sm}
+                          paddingVertical={spacing.xs}
+                          borderRadius={radius.full}
+                          backgroundColor={cardBg}
+                          borderWidth={1}
+                          borderColor={isDark ? hexColors.dark.border : hexColors.light.border}
+                        >
+                          <Lightbulb
+                            size={iconSizes.xs}
+                            color={hintBalance > 0 ? primaryColor : secondaryTextColor}
+                          />
+                          <Text.Caption
+                            fontFamily={FONT_FAMILIES.semibold}
+                            color={hintBalance > 0 ? primaryColor : secondaryTextColor}
+                          >
+                            {hintBalance > 0 ? String(hintBalance) : t('hintStoreTitle')}
+                          </Text.Caption>
+                        </XStack>
+                      </Pressable>
+                    )}
+                  </XStack>
                 </Animated.View>
                 <View style={{ gap: spacing.lg }}>
                   {/* First row: Daily Trivia + Mixed Trivia */}

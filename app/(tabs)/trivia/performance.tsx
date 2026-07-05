@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Animated as RNAnimated,
@@ -9,15 +9,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import Animated, {
-  Easing,
-  FadeIn,
-  ReduceMotion,
-  useAnimatedProps,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
-import Svg, { Circle } from 'react-native-svg';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { useFocusEffect, useNavigation } from 'expo-router';
@@ -32,10 +24,12 @@ import {
   CheckCircle,
   ChevronLeft,
   ChevronRight,
+  Clock,
   Flame,
-  Gamepad2,
   Grid,
+  HelpCircle,
   Shuffle,
+  Tag,
   Zap,
 } from '../../../src/components/icons';
 import { XStack, YStack } from '../../../src/components/Stacks';
@@ -54,12 +48,15 @@ import { getLucideIcon } from '../../../src/utils/iconMapper';
 import { absoluteFillObject, androidRipple } from '../../../src/utils/styles';
 import { useResponsive } from '../../../src/utils/useResponsive';
 
+import type { TranslationKeys } from '../../../src/i18n/translations';
 import type { TriviaMode } from '../../../src/services/analytics';
 import type {
   CategoryWithProgress,
   TriviaSessionWithCategory,
   TriviaStats,
 } from '../../../src/services/trivia';
+
+type ModeBreakdownRow = Awaited<ReturnType<typeof triviaService.getModeBreakdown>>[number];
 
 // View All Button with press animation
 function ViewAllButton({
@@ -72,7 +69,7 @@ function ViewAllButton({
   color: string;
 }) {
   const { iconSizes, spacing } = useResponsive();
-  const scale = useRef(new RNAnimated.Value(1)).current;
+  const scale = React.useRef(new RNAnimated.Value(1)).current;
 
   const handlePressIn = () => {
     RNAnimated.spring(scale, {
@@ -116,172 +113,151 @@ function ViewAllButton({
   );
 }
 
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-
 /**
- * Card-toned accuracy dial: quiet track in the border tone, primary arc,
- * headline number in the middle. Same 900ms ease the hub hero's ring uses so
- * the two dials feel like one system across screens.
+ * Card scaffold shared by every block on this screen: shadow + rounded card
+ * fill, with the iOS 26 Liquid Glass backing when available (the same
+ * treatment the old stat cards carried, factored out so the reworked blocks
+ * can't drift apart in tone).
  */
-function AccuracyDial({
-  percentage,
-  size,
-  strokeWidth,
-  trackColor,
-  progressColor,
+function PerfCard({
   children,
+  isDark,
+  padding,
+  onPress,
+  fillRow = false,
 }: {
-  percentage: number;
-  size: number;
-  strokeWidth: number;
-  trackColor: string;
-  progressColor: string;
-  children?: React.ReactNode;
+  children: React.ReactNode;
+  isDark: boolean;
+  padding?: number;
+  onPress?: () => void;
+  /** flex:1 for cards sharing a horizontal row (the stat tiles). Standalone
+   * cards must NOT flex — flexBasis:0 collapses them inside auto-height
+   * parents. */
+  fillRow?: boolean;
 }) {
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const center = size / 2;
-
-  const progress = useSharedValue(0);
-  useEffect(() => {
-    progress.value = withTiming(percentage, {
-      duration: 900,
-      easing: Easing.out(Easing.cubic),
-      reduceMotion: ReduceMotion.System,
-    });
-  }, [percentage, progress]);
-
-  const animatedProps = useAnimatedProps(() => ({
-    strokeDashoffset: circumference - (progress.value / 100) * circumference,
-  }));
-
-  return (
-    <YStack alignItems="center" justifyContent="center">
-      <Svg width={size} height={size}>
-        <Circle
-          cx={center}
-          cy={center}
-          r={radius}
-          stroke={trackColor}
-          strokeWidth={strokeWidth}
-          fill="none"
+  const { spacing, radius } = useResponsive();
+  const colors = isDark ? hexColors.dark : hexColors.light;
+  const useGlass = Platform.OS === 'ios' && isLiquidGlassAvailable();
+  const body = (
+    <>
+      {useGlass && (
+        <GlassSurface
+          variant="glass"
+          isDark={isDark}
+          tint={colors.cardBackground}
+          glassTint={hexToRgba(colors.cardBackground, isDark ? 0.6 : 0.65)}
+          borderRadius={radius.lg}
+          style={absoluteFillObject}
         />
-        {percentage > 0 && (
-          <AnimatedCircle
-            cx={center}
-            cy={center}
-            r={radius}
-            stroke={progressColor}
-            strokeWidth={strokeWidth}
-            fill="none"
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            animatedProps={animatedProps}
-            rotation="-90"
-            origin={`${center}, ${center}`}
-          />
-        )}
-      </Svg>
+      )}
       <YStack
-        position="absolute"
-        alignItems="center"
-        justifyContent="center"
-        width={size - strokeWidth * 2}
+        backgroundColor={useGlass ? 'transparent' : colors.cardBackground}
+        borderRadius={radius.lg}
+        padding={padding ?? spacing.lg}
       >
         {children}
       </YStack>
-    </YStack>
+    </>
   );
+  const frameStyle = [
+    perfShadowStyles.card,
+    { borderRadius: radius.lg },
+    useGlass && {
+      overflow: 'hidden' as const,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+  ];
+  if (onPress) {
+    return (
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [
+          ...frameStyle,
+          { opacity: pressed ? 0.7 : 1 },
+          fillRow && { flex: 1 },
+        ]}
+      >
+        {body}
+      </Pressable>
+    );
+  }
+  return <View style={[...frameStyle, fillRow && { flex: 1 }]}>{body}</View>;
 }
 
-// One overview stat line: tinted icon plate + value + label/micro stack.
-function OverviewRow({
+/**
+ * One lifetime stat tile: tinted icon plate, headline value, quiet uppercase
+ * label. Four of these form the top band — lifetime numbers the hub hero does
+ * NOT show (the hero owns accuracy/quizzes/streak/rank; duplicating them here
+ * was the old screen's failure mode).
+ */
+function StatTile({
   icon,
   color,
   value,
   label,
-  micro,
   isDark,
 }: {
   icon: React.ReactNode;
   color: string;
   value: string | number;
   label: string;
-  micro?: string | null;
   isDark: boolean;
 }) {
   const { spacing, radius, iconSizes, typography } = useResponsive();
-  const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
-  const mutedColor = isDark ? hexColors.dark.textMuted : hexColors.light.textMuted;
+  const colors = isDark ? hexColors.dark : hexColors.light;
   return (
-    <XStack alignItems="center" gap={spacing.sm}>
-      <View
-        style={{
-          width: iconSizes.xl,
-          height: iconSizes.xl,
-          borderRadius: radius.sm,
-          backgroundColor: `${color}20`,
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-      >
-        {icon}
-      </View>
-      <YStack
-        height={typography.lineHeight.title}
-        minWidth={typography.fontSize.title * 1.3}
-        justifyContent="center"
-      >
-        <Text.Title color={textColor} fontFamily={FONT_FAMILIES.bold} numberOfLines={1}>
-          {value}
-        </Text.Title>
-      </YStack>
-      <YStack flex={1} justifyContent="center">
-        <Text.Tiny
-          color={mutedColor}
-          textTransform="uppercase"
-          letterSpacing={0.8}
-          fontFamily={FONT_FAMILIES.semibold}
-          numberOfLines={1}
+    <PerfCard isDark={isDark} padding={spacing.md} fillRow>
+      <YStack gap={spacing.sm}>
+        <View
+          style={{
+            width: iconSizes.xl,
+            height: iconSizes.xl,
+            borderRadius: radius.sm,
+            backgroundColor: `${color}20`,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
         >
-          {label}
-        </Text.Tiny>
-        {micro ? (
-          <Text.Tiny color={mutedColor} fontFamily={FONT_FAMILIES.medium} numberOfLines={1}>
-            {micro}
+          {icon}
+        </View>
+        <YStack>
+          <Text.Title color={colors.text} fontFamily={FONT_FAMILIES.bold} numberOfLines={1}>
+            {value}
+          </Text.Title>
+          <Text.Tiny
+            color={colors.textMuted}
+            textTransform="uppercase"
+            letterSpacing={0.8}
+            fontFamily={FONT_FAMILIES.semibold}
+            numberOfLines={1}
+            fontSize={typography.fontSize.tiny}
+          >
+            {label}
           </Text.Tiny>
-        ) : null}
+        </YStack>
       </YStack>
-    </XStack>
+    </PerfCard>
   );
 }
 
-/**
- * The performance overview: accuracy dial + the three stats that matter
- * (quizzes, correct, streak) + a 7-day activity strip. Replaced the old
- * Tests/Correct/Answered card grid, which buried accuracy (the headline
- * metric) and duplicated "answered" vs "correct" without adding signal —
- * the dial's denominator line now carries answered.
- */
-function PerformanceOverview({
-  stats,
+/** The trailing-week activity card: quiet label + this-week delta over the
+ * 7-day bar strip (carried over from the old overview card). */
+function WeeklyActivityCard({
   weeklyActivity,
+  testsThisWeek,
   isDark,
   t,
 }: {
-  stats: TriviaStats | null;
   weeklyActivity: { date: string; count: number }[];
+  testsThisWeek: number;
   isDark: boolean;
-  t: (key: any, params?: any) => string;
+  t: (key: TranslationKeys, params?: Record<string, string | number>) => string;
 }) {
-  const { spacing, radius, iconSizes, borderWidths, typography } = useResponsive();
+  const { spacing, radius, typography } = useResponsive();
   const colors = isDark ? hexColors.dark : hexColors.light;
-  const cardBg = colors.cardBackground;
-  const useGlass = Platform.OS === 'ios' && isLiquidGlassAvailable();
-
-  const accuracy = stats?.accuracy ?? 0;
   const maxDayCount = Math.max(1, ...weeklyActivity.map((d) => d.count));
-  const stripHeight = spacing.xl + spacing.sm;
+  const stripHeight = spacing.xl + spacing.md;
 
   // Localized single-letter weekday markers under the activity bars.
   const dayInitial = (isoDate: string) => {
@@ -290,112 +266,9 @@ function PerformanceOverview({
   };
 
   return (
-    <View
-      style={[
-        perfShadowStyles.card,
-        { borderRadius: radius.lg },
-        useGlass && {
-          overflow: 'hidden' as const,
-          borderWidth: 1,
-          borderColor: colors.border,
-        },
-      ]}
-    >
-      {useGlass && (
-        <GlassSurface
-          variant="glass"
-          isDark={isDark}
-          tint={cardBg}
-          glassTint={hexToRgba(cardBg, isDark ? 0.6 : 0.65)}
-          borderRadius={radius.lg}
-          style={absoluteFillObject}
-        />
-      )}
-      <YStack
-        backgroundColor={useGlass ? 'transparent' : cardBg}
-        borderRadius={radius.lg}
-        padding={spacing.lg}
-        gap={spacing.lg}
-      >
-        <XStack alignItems="center" gap={spacing.md}>
-          {/* Dial half */}
-          <YStack flex={1} alignItems="center" gap={spacing.sm}>
-            <AccuracyDial
-              percentage={accuracy}
-              size={iconSizes.heroXl}
-              strokeWidth={borderWidths.extraHeavy}
-              trackColor={colors.border}
-              progressColor={colors.primary}
-            >
-              <XStack alignItems="baseline">
-                <Text.Display color={colors.text} numberOfLines={1}>
-                  {accuracy}
-                </Text.Display>
-                <Text.Caption fontFamily={FONT_FAMILIES.semibold} color={colors.textMuted}>
-                  %
-                </Text.Caption>
-              </XStack>
-            </AccuracyDial>
-            <YStack alignItems="center">
-              <Text.Tiny
-                color={colors.textMuted}
-                textTransform="uppercase"
-                letterSpacing={0.8}
-                fontFamily={FONT_FAMILIES.semibold}
-              >
-                {t('accuracy')}
-              </Text.Tiny>
-              <Text.Tiny color={colors.textMuted} fontFamily={FONT_FAMILIES.medium}>
-                {`${stats?.totalCorrect ?? 0} / ${stats?.totalAnswered ?? 0}`}
-              </Text.Tiny>
-            </YStack>
-          </YStack>
-
-          {/* Structural hairline between the halves */}
-          <YStack
-            width={1}
-            alignSelf="stretch"
-            marginVertical={spacing.xs}
-            backgroundColor={colors.border}
-          />
-
-          {/* Stat rows half */}
-          <YStack flex={1.2} gap={spacing.md}>
-            <OverviewRow
-              icon={<Gamepad2 size={iconSizes.xs} color={colors.neonPurple} />}
-              color={colors.neonPurple}
-              value={stats?.testsTaken ?? 0}
-              label={t('quizzes')}
-              micro={stats?.testsThisWeek ? t('thisWeek', { count: stats.testsThisWeek }) : null}
-              isDark={isDark}
-            />
-            <OverviewRow
-              icon={<CheckCircle size={iconSizes.xs} color={colors.success} />}
-              color={colors.success}
-              value={stats?.totalCorrect ?? 0}
-              label={t('correct')}
-              micro={stats?.correctToday ? t('todayCount', { count: stats.correctToday }) : null}
-              isDark={isDark}
-            />
-            <OverviewRow
-              icon={<Flame size={iconSizes.xs} color={colors.neonOrange} />}
-              color={colors.neonOrange}
-              value={stats?.currentStreak ?? 0}
-              label={t('dayStreak')}
-              micro={t('best', { count: stats?.bestStreak ?? 0 })}
-              isDark={isDark}
-            />
-          </YStack>
-        </XStack>
-
-        {/* 7-day activity strip */}
-        <YStack gap={spacing.sm}>
-          <View
-            style={{
-              height: borderWidths.hairline,
-              backgroundColor: colors.border,
-            }}
-          />
+    <PerfCard isDark={isDark}>
+      <YStack gap={spacing.md}>
+        <XStack alignItems="center" justifyContent="space-between">
           <Text.Tiny
             color={colors.textMuted}
             textTransform="uppercase"
@@ -404,36 +277,129 @@ function PerformanceOverview({
           >
             {t('last7Days')}
           </Text.Tiny>
-          <XStack gap={spacing.sm} alignItems="flex-end">
-            {weeklyActivity.map((day) => {
-              const active = day.count > 0;
-              const barHeight = active
-                ? Math.max(stripHeight * 0.3, (day.count / maxDayCount) * stripHeight)
-                : spacing.xs;
-              return (
-                <YStack key={day.date} flex={1} alignItems="center" gap={spacing.xs}>
-                  <View
-                    style={{
-                      width: '55%',
-                      height: barHeight,
-                      borderRadius: radius.full,
-                      backgroundColor: active ? colors.primary : colors.border,
-                    }}
-                  />
-                  <Text.Tiny
-                    color={colors.textMuted}
-                    fontSize={typography.fontSize.tiny}
-                    maxFontSizeMultiplier={1}
-                  >
-                    {dayInitial(day.date)}
-                  </Text.Tiny>
-                </YStack>
-              );
-            })}
-          </XStack>
-        </YStack>
+          {testsThisWeek > 0 && (
+            <Text.Caption color={colors.primary} fontFamily={FONT_FAMILIES.semibold}>
+              {t('thisWeek', { count: testsThisWeek })}
+            </Text.Caption>
+          )}
+        </XStack>
+        <XStack gap={spacing.sm} alignItems="flex-end">
+          {weeklyActivity.map((day) => {
+            const active = day.count > 0;
+            const barHeight = active
+              ? Math.max(stripHeight * 0.3, (day.count / maxDayCount) * stripHeight)
+              : spacing.xs;
+            return (
+              <YStack key={day.date} flex={1} alignItems="center" gap={spacing.xs}>
+                <View
+                  style={{
+                    width: '55%',
+                    height: barHeight,
+                    borderRadius: radius.full,
+                    backgroundColor: active ? colors.primary : colors.border,
+                  }}
+                />
+                <Text.Tiny
+                  color={colors.textMuted}
+                  fontSize={typography.fontSize.tiny}
+                  maxFontSizeMultiplier={1}
+                >
+                  {dayInitial(day.date)}
+                </Text.Tiny>
+              </YStack>
+            );
+          })}
+        </XStack>
       </YStack>
-    </View>
+    </PerfCard>
+  );
+}
+
+/** Icon + hue signature per mode — the same map the hub grid cards and the
+ * session rows speak, so a mode reads identically across all three surfaces. */
+function modeVisual(
+  mode: ModeBreakdownRow['mode'],
+  isDark: boolean
+): { Icon: typeof Calendar; color: string } {
+  const colors = isDark ? hexColors.dark : hexColors.light;
+  switch (mode) {
+    case 'daily':
+      return { Icon: Calendar, color: colors.primary };
+    case 'true_false':
+      return { Icon: CheckCircle, color: colors.neonGreen };
+    case 'multiple_choice':
+      return { Icon: Grid, color: colors.neonOrange };
+    case 'category':
+      return { Icon: Tag, color: colors.accent };
+    default:
+      return { Icon: Shuffle, color: colors.neonPurple };
+  }
+}
+
+const MODE_LABEL_KEY: Record<ModeBreakdownRow['mode'], TranslationKeys> = {
+  daily: 'dailyTrivia',
+  mixed: 'mixedTrivia',
+  true_false: 'trueFalseTrivia',
+  multiple_choice: 'multipleChoiceTrivia',
+  category: 'categoryMode',
+};
+
+/** Per-mode play volume + accuracy rows. */
+function ModeBreakdownCard({
+  rows,
+  isDark,
+  t,
+}: {
+  rows: ModeBreakdownRow[];
+  isDark: boolean;
+  t: (key: TranslationKeys, params?: Record<string, string | number>) => string;
+}) {
+  const { spacing, radius, iconSizes, typography } = useResponsive();
+  const colors = isDark ? hexColors.dark : hexColors.light;
+  return (
+    <PerfCard isDark={isDark}>
+      <YStack gap={spacing.lg}>
+        {rows.map((row) => {
+          const { Icon, color } = modeVisual(row.mode, isDark);
+          return (
+            <XStack key={row.mode} alignItems="center" gap={spacing.sm}>
+              <View
+                style={{
+                  width: iconSizes.xl,
+                  height: iconSizes.xl,
+                  borderRadius: radius.sm,
+                  backgroundColor: `${color}20`,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
+                <Icon size={iconSizes.xs} color={color} />
+              </View>
+              <YStack flex={1}>
+                <Text.Label
+                  color={colors.text}
+                  fontFamily={FONT_FAMILIES.medium}
+                  numberOfLines={1}
+                >
+                  {t(MODE_LABEL_KEY[row.mode])}
+                </Text.Label>
+                <Text.Caption color={colors.textMuted} fontSize={typography.fontSize.tiny}>
+                  {t('leaderboardGamesCount', { count: String(row.games) })}
+                </Text.Caption>
+              </YStack>
+              <YStack alignItems="flex-end">
+                <Text.Label color={colors.text} fontFamily={FONT_FAMILIES.bold}>
+                  {`${row.accuracy}%`}
+                </Text.Label>
+                <Text.Caption color={colors.textMuted} fontSize={typography.fontSize.tiny}>
+                  {`${row.correct}/${row.answered}`}
+                </Text.Caption>
+              </YStack>
+            </XStack>
+          );
+        })}
+      </YStack>
+    </PerfCard>
   );
 }
 
@@ -710,6 +676,11 @@ export default function PerformanceScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState<TriviaStats | null>(null);
+  const [lifetime, setLifetime] = useState<{ perfectGames: number; totalPlaySeconds: number }>({
+    perfectGames: 0,
+    totalPlaySeconds: 0,
+  });
+  const [modeBreakdown, setModeBreakdown] = useState<ModeBreakdownRow[]>([]);
   const [categories, setCategories] = useState<CategoryWithProgress[]>([]);
   const [weeklyActivity, setWeeklyActivity] = useState<{ date: string; count: number }[]>([]);
   const [recentSessions, setRecentSessions] = useState<TriviaSessionWithCategory[]>([]);
@@ -723,16 +694,29 @@ export default function PerformanceScreen() {
       try {
         if (isRefresh) setRefreshing(true);
 
-        const [statsData, categoriesData, activityData, sessionsData, earnedBadges] =
-          await Promise.all([
-            triviaService.getOverallStats(),
-            triviaService.getCategoriesWithProgress(locale),
-            triviaService.getWeeklyActivity(),
-            triviaService.getRecentSessions(DISPLAY_LIMITS.MAX_ACTIVITIES),
-            getEarnedBadges(),
-          ]);
+        const [
+          statsData,
+          lifetimeData,
+          modeData,
+          categoriesData,
+          activityData,
+          sessionsData,
+          earnedBadges,
+        ] = await Promise.all([
+          triviaService.getOverallStats(),
+          triviaService.getLifetimeExtras(),
+          triviaService.getModeBreakdown(),
+          // Play-history categories (all modes), NOT the interest selection —
+          // stats must not vanish when the user trims their interests.
+          triviaService.getCategoryAccuracy(locale),
+          triviaService.getWeeklyActivity(),
+          triviaService.getRecentSessions(DISPLAY_LIMITS.MAX_ACTIVITIES),
+          getEarnedBadges(),
+        ]);
 
         setStats(statsData);
+        setLifetime(lifetimeData);
+        setModeBreakdown(modeData);
         setCategories(categoriesData);
         setWeeklyActivity(activityData);
         setRecentSessions(sessionsData);
@@ -832,15 +816,21 @@ export default function PerformanceScreen() {
   // Colors
   const bgColor = isDark ? hexColors.dark.background : hexColors.light.background;
   const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
-  const cardBg = isDark ? hexColors.dark.cardBackground : hexColors.light.cardBackground;
-  const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
-  const accentColor = isDark ? hexColors.dark.accent : hexColors.light.accent;
+  const colors = isDark ? hexColors.dark : hexColors.light;
+  const primaryColor = colors.primary;
+  const accentColor = colors.accent;
 
-  // iOS 26 Liquid Glass for the stat cards in this plain ScrollView (cards go
-  // transparent, glass tinted with the card color shows through). Opaque cards
-  // everywhere else are untouched.
-  const useGlass = Platform.OS === 'ios' && isLiquidGlassAvailable();
-  const glassTint = hexToRgba(cardBg, isDark ? 0.6 : 0.65);
+  // Play time as "3h 24m" / "24m"; sub-minute play rounds up to 1m so any
+  // real play never reads as zero.
+  const formatPlayTime = (seconds: number) => {
+    if (seconds <= 0) return t('durationMinutes', { minutes: 0 });
+    const totalMinutes = Math.max(1, Math.round(seconds / 60));
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return hours > 0
+      ? t('durationHoursMinutes', { hours, minutes })
+      : t('durationMinutes', { minutes: totalMinutes });
+  };
 
   if (loading) {
     return (
@@ -911,12 +901,8 @@ export default function PerformanceScreen() {
     );
   }
 
-  // Top categories by accuracy, from category-mode play history. `answered`
-  // (not the old `total`, which zeroed when the local question mirror was
-  // removed and kept this section permanently hidden) decides visibility —
-  // a 0% category with real answers is signal, not noise.
-  const displayCategories = categories
-    .filter((c) => c.answered > 0)
+  // Top categories by accuracy across ALL play (already answered > 0).
+  const displayCategories = [...categories]
     .sort((a, b) => b.accuracy - a.accuracy)
     .slice(0, DISPLAY_LIMITS.MAX_CATEGORIES);
 
@@ -933,54 +919,127 @@ export default function PerformanceScreen() {
       >
         <ContentContainer>
           <YStack marginVertical={spacing.lg} gap={spacing.xl}>
-            {/* Overview — no section label: it read as a stray fixed subtitle
-                directly under the native large title. */}
+            {/* Lifetime band — the numbers the hub hero does NOT carry. The
+                hero (accuracy ring / quizzes / streak / rank) stays the
+                at-a-glance card; this screen is the deep dive, so repeating
+                the dial here was dropped. */}
             <Animated.View
               entering={FadeIn.delay(50).duration(400).springify()}
               needsOffscreenAlphaCompositing={Platform.OS === 'android'}
             >
-              <PerformanceOverview
-                stats={stats}
+              <YStack gap={spacing.md}>
+                <XStack gap={spacing.md}>
+                  <StatTile
+                    icon={<HelpCircle size={iconSizes.xs} color={primaryColor} />}
+                    color={primaryColor}
+                    value={stats?.totalAnswered ?? 0}
+                    label={t('answered')}
+                    isDark={isDark}
+                  />
+                  <StatTile
+                    icon={<Award size={iconSizes.xs} color={colors.warning} />}
+                    color={colors.warning}
+                    value={lifetime.perfectGames}
+                    label={t('perfectGames')}
+                    isDark={isDark}
+                  />
+                </XStack>
+                <XStack gap={spacing.md}>
+                  <StatTile
+                    icon={<Flame size={iconSizes.xs} color={colors.neonOrange} />}
+                    color={colors.neonOrange}
+                    value={stats?.bestStreak ?? 0}
+                    label={t('dayStreak')}
+                    isDark={isDark}
+                  />
+                  <StatTile
+                    icon={<Clock size={iconSizes.xs} color={colors.neonPurple} />}
+                    color={colors.neonPurple}
+                    value={formatPlayTime(lifetime.totalPlaySeconds)}
+                    label={t('timePlayed')}
+                    isDark={isDark}
+                  />
+                </XStack>
+              </YStack>
+            </Animated.View>
+
+            {/* Trailing week activity */}
+            <Animated.View
+              entering={FadeIn.delay(100).duration(400).springify()}
+              needsOffscreenAlphaCompositing={Platform.OS === 'android'}
+            >
+              <WeeklyActivityCard
                 weeklyActivity={weeklyActivity}
+                testsThisWeek={stats?.testsThisWeek ?? 0}
                 isDark={isDark}
                 t={t}
               />
             </Animated.View>
 
+            {/* Per-mode breakdown */}
+            {modeBreakdown.length > 0 && (
+              <Animated.View
+                entering={FadeIn.delay(150).duration(400).springify()}
+                needsOffscreenAlphaCompositing={Platform.OS === 'android'}
+              >
+                <YStack gap={spacing.md}>
+                  <Text.Title color={textColor}>{t('byMode')}</Text.Title>
+                  <ModeBreakdownCard rows={modeBreakdown} isDark={isDark} t={t} />
+                </YStack>
+              </Animated.View>
+            )}
+
+            {/* Accuracy by Category */}
+            {displayCategories.length > 0 && (
+              <Animated.View
+                entering={FadeIn.delay(200).duration(400).springify()}
+                needsOffscreenAlphaCompositing={Platform.OS === 'android'}
+              >
+                <YStack marginBottom={spacing.md} gap={spacing.xs}>
+                  <XStack alignItems="center" justifyContent="space-between">
+                    <Text.Title color={textColor} flex={1}>
+                      {t('accuracyByCategory')}
+                    </Text.Title>
+                    {categories.length > displayCategories.length && (
+                      <ViewAllButton
+                        onPress={() => router.push('/(tabs)/trivia/categories')}
+                        label={t('viewAll')}
+                        color={primaryColor}
+                      />
+                    )}
+                  </XStack>
+                  <Text.Caption
+                    color={isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary}
+                    opacity={0.9}
+                  >
+                    {t('accuracyByCategorySubtitle')}
+                  </Text.Caption>
+                </YStack>
+
+                <PerfCard
+                  isDark={isDark}
+                  onPress={() => router.push('/(tabs)/trivia/categories')}
+                >
+                  <YStack gap={spacing.lg}>
+                    {displayCategories.map((category) => (
+                      <CategoryProgressBar
+                        key={category.slug}
+                        category={category}
+                        isDark={isDark}
+                      />
+                    ))}
+                  </YStack>
+                </PerfCard>
+              </Animated.View>
+            )}
+
             {/* Achievements Card */}
             <Animated.View
-              entering={FadeIn.delay(100).duration(400).springify()}
+              entering={FadeIn.delay(250).duration(400).springify()}
               needsOffscreenAlphaCompositing={Platform.OS === 'android'}
             >
-              <Pressable
-                onPress={() => router.push('/badges')}
-                style={({ pressed }) => [
-                  perfShadowStyles.card,
-                  { borderRadius: radius.lg },
-                  { opacity: pressed ? 0.7 : 1 },
-                  useGlass && {
-                    overflow: 'hidden' as const,
-                    borderWidth: 1,
-                    borderColor: isDark ? hexColors.dark.border : hexColors.light.border,
-                  },
-                ]}
-              >
-                {useGlass && (
-                  <GlassSurface
-                    variant="glass"
-                    isDark={isDark}
-                    tint={cardBg}
-                    glassTint={glassTint}
-                    borderRadius={radius.lg}
-                    style={absoluteFillObject}
-                  />
-                )}
-                <YStack
-                  backgroundColor={useGlass ? 'transparent' : cardBg}
-                  borderRadius={radius.lg}
-                  padding={spacing.lg}
-                  gap={spacing.md}
-                >
+              <PerfCard isDark={isDark} onPress={() => router.push('/badges')}>
+                <YStack gap={spacing.md}>
                   <XStack alignItems="center" justifyContent="space-between">
                     <XStack alignItems="center" gap={spacing.sm}>
                       <Award size={iconSizes.sm} color={accentColor} />
@@ -1037,65 +1096,8 @@ export default function PerformanceScreen() {
                       ))}
                   </ScrollView>
                 </YStack>
-              </Pressable>
+              </PerfCard>
             </Animated.View>
-
-            {/* Accuracy by Category */}
-            {displayCategories.length > 0 && (
-              <View>
-                <YStack marginBottom={spacing.md} gap={spacing.xs}>
-                  <XStack alignItems="center" justifyContent="space-between">
-                    <Text.Title color={textColor} flex={1}>
-                      {t('accuracyByCategory')}
-                    </Text.Title>
-                  </XStack>
-                  <Text.Caption
-                    color={isDark ? hexColors.dark.textSecondary : hexColors.light.textSecondary}
-                    opacity={0.9}
-                  >
-                    {t('accuracyByCategorySubtitle')}
-                  </Text.Caption>
-                </YStack>
-
-                <Pressable
-                  onPress={() => router.push('/(tabs)/trivia/categories')}
-                  style={({ pressed }) => [
-                    perfShadowStyles.card,
-                    { borderRadius: radius.lg },
-                    { opacity: pressed ? 0.7 : 1 },
-                    useGlass && {
-                      overflow: 'hidden' as const,
-                      borderWidth: 1,
-                      borderColor: isDark ? hexColors.dark.border : hexColors.light.border,
-                    },
-                  ]}
-                >
-                  {useGlass && (
-                    <GlassSurface
-                      variant="glass"
-                      isDark={isDark}
-                      tint={cardBg}
-                      glassTint={glassTint}
-                      style={absoluteFillObject}
-                    />
-                  )}
-                  <YStack
-                    backgroundColor={useGlass ? 'transparent' : cardBg}
-                    borderRadius={radius.lg}
-                    padding={spacing.lg}
-                    gap={spacing.lg}
-                  >
-                    {displayCategories.map((category) => (
-                      <CategoryProgressBar
-                        key={category.slug}
-                        category={category}
-                        isDark={isDark}
-                      />
-                    ))}
-                  </YStack>
-                </Pressable>
-              </View>
-            )}
 
             {/* Recent Trivia */}
             {recentSessions.length > 0 && (

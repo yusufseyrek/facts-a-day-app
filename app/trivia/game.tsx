@@ -380,7 +380,13 @@ export default function TriviaGameScreen() {
       const selectedAnswer = gameState.answers[question.id];
       if (selectedAnswer) {
         const isCorrect = triviaService.isTextAnswerCorrect(question, selectedAnswer);
-        await triviaService.recordAnswer(question.id, isCorrect, triviaMode, sessionId);
+        await triviaService.recordAnswer(
+          question.id,
+          isCorrect,
+          triviaMode,
+          sessionId,
+          question.fact?.category
+        );
       }
     }
 
@@ -683,7 +689,13 @@ export default function TriviaGameScreen() {
         const selectedAnswer = gameState.answers[question.id];
         if (selectedAnswer) {
           const isCorrect = triviaService.isTextAnswerCorrect(question, selectedAnswer);
-          await triviaService.recordAnswer(question.id, isCorrect, triviaMode, sessionId);
+          await triviaService.recordAnswer(
+            question.id,
+            isCorrect,
+            triviaMode,
+            sessionId,
+            question.fact?.category
+          );
         }
       }
 

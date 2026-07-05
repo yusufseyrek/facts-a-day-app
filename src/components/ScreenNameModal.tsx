@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, TextInput } from 'react-native';
 
-import { AVATAR_EMOJI } from '../config/avatars';
+import { AVATAR_ICONS, AVATAR_TOKENS } from '../config/avatars';
 import { useTranslation } from '../i18n';
 import * as api from '../services/api';
 import * as userService from '../services/user';
@@ -211,15 +211,16 @@ export function ScreenNameModal({
           </YStack>
         </XStack>
         <XStack flexWrap="wrap" gap={spacing.xs} justifyContent="center">
-          {AVATAR_EMOJI.map((emoji) => {
-            const selected = avatar === emoji;
+          {AVATAR_TOKENS.map((token) => {
+            const selected = avatar === token;
+            const AvatarIcon = AVATAR_ICONS[token];
             return (
               <Pressable
-                key={emoji}
-                onPress={() => setAvatar(selected ? null : emoji)}
+                key={token}
+                onPress={() => setAvatar(selected ? null : token)}
                 disabled={isSubmitting}
                 accessibilityRole="button"
-                accessibilityLabel={emoji}
+                accessibilityLabel={token}
                 accessibilityState={{ selected }}
                 style={({ pressed }) => ({
                   width: iconSizes.xl,
@@ -236,9 +237,10 @@ export function ScreenNameModal({
                   transform: [{ scale: pressed ? 0.92 : 1 }],
                 })}
               >
-                <Text fontSize={iconSizes.xl * 0.5} maxFontSizeMultiplier={1}>
-                  {emoji}
-                </Text>
+                <AvatarIcon
+                  size={iconSizes.xl * 0.52}
+                  color={selected ? hexColors[theme].primary : hexColors[theme].textSecondary}
+                />
               </Pressable>
             );
           })}

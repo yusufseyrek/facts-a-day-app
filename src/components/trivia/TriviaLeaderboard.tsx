@@ -853,6 +853,11 @@ function TriviaLeaderboardComponent({
         onClose={() => setNamePromptVisible(false)}
         onSaved={handleNameSaved}
         currentName={null}
+        source="leaderboard"
+        // Mounted inside the leaderboard card, deep in a scrolling screen —
+        // present in a window-level Modal so the iOS overlay covers the whole
+        // screen instead of being clamped to this card's frame.
+        presentInWindow
       />
     </YStack>
   );

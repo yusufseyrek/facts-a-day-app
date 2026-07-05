@@ -121,9 +121,19 @@ async function initializeSchema(): Promise<void> {
       is_correct INTEGER NOT NULL,
       answered_at TEXT NOT NULL,
       trivia_mode TEXT NOT NULL,
-      trivia_session_id INTEGER
+      trivia_session_id INTEGER,
+      category_slug TEXT
     );
   `);
+  // Attempt-level category attribution (every mode, not just category games —
+  // the hydrated question knows its fact's category). Existing installs need
+  // the ALTER; SQLite has no IF NOT EXISTS for columns, so probe first.
+  const attemptCols = await db.getAllAsync<{ name: string }>(
+    `PRAGMA table_info(question_attempts)`
+  );
+  if (!attemptCols.some((c) => c.name === 'category_slug')) {
+    await db.execAsync(`ALTER TABLE question_attempts ADD COLUMN category_slug TEXT;`);
+  }
   await db.execAsync(
     `CREATE INDEX IF NOT EXISTS idx_attempts_question_id ON question_attempts(question_id);`
   );
@@ -540,15 +550,16 @@ export async function recordQuestionAttempt(
   questionId: number,
   isCorrect: boolean,
   triviaMode: LocalTriviaMode,
-  triviaSessionId?: number
+  triviaSessionId?: number,
+  categorySlug?: string | null
 ): Promise<void> {
   const database = await openDatabase();
   const now = new Date().toISOString();
 
   await database.runAsync(
-    `INSERT INTO question_attempts (question_id, is_correct, answered_at, trivia_mode, trivia_session_id)
-     VALUES (?, ?, ?, ?, ?)`,
-    [questionId, isCorrect ? 1 : 0, now, triviaMode, triviaSessionId || null]
+    `INSERT INTO question_attempts (question_id, is_correct, answered_at, trivia_mode, trivia_session_id, category_slug)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [questionId, isCorrect ? 1 : 0, now, triviaMode, triviaSessionId || null, categorySlug || null]
   );
 }
 
@@ -1026,23 +1037,104 @@ export async function getDailySessionCounts(
 }
 
 /**
- * Per-category play volume + accuracy inputs from CATEGORY-mode sessions.
- * The local question→category map died with the question mirror, so
- * daily/mixed answers can't be attributed — category sessions carry their
- * slug and are enough to light the accuracy-by-category bars back up.
+ * Per-category answered/correct across ALL play, from two generations of data:
+ *
+ *  - question_attempts.category_slug — per-answer attribution written since
+ *    the column existed. Covers every mode (daily/mixed/format lenses too, not
+ *    just category games): the hydrated question knows its fact's category.
+ *  - legacy trivia_sessions — category-mode sessions recorded BEFORE attempts
+ *    carried a slug. Only sessions with no slug-carrying attempts count here
+ *    (NOT EXISTS), so a post-upgrade category game is never counted twice.
+ *
+ * Legacy daily/mixed answers stay unattributed (the question→category map died
+ * with the local question mirror); they simply don't feed these bars.
  */
-export async function getCategorySessionAggregates(): Promise<
+export async function getCategoryAccuracyAggregates(): Promise<
   { category_slug: string; answered: number; correct: number }[]
 > {
   const database = await openDatabase();
-  return database.getAllAsync<{ category_slug: string; answered: number; correct: number }>(
+  const attemptRows = await database.getAllAsync<{
+    category_slug: string;
+    answered: number;
+    correct: number;
+  }>(
     `SELECT category_slug,
-            SUM(total_questions) as answered,
-            SUM(correct_answers) as correct
-       FROM trivia_sessions
+            COUNT(*) as answered,
+            SUM(is_correct) as correct
+       FROM question_attempts
       WHERE category_slug IS NOT NULL AND category_slug != ''
       GROUP BY category_slug`
   );
+  const legacyRows = await database.getAllAsync<{
+    category_slug: string;
+    answered: number;
+    correct: number;
+  }>(
+    `SELECT category_slug,
+            SUM(total_questions) as answered,
+            SUM(correct_answers) as correct
+       FROM trivia_sessions s
+      WHERE category_slug IS NOT NULL AND category_slug != ''
+        AND NOT EXISTS (
+          SELECT 1 FROM question_attempts qa
+           WHERE qa.trivia_session_id = s.id AND qa.category_slug IS NOT NULL
+        )
+      GROUP BY category_slug`
+  );
+
+  const merged = new Map<string, { category_slug: string; answered: number; correct: number }>();
+  for (const row of [...attemptRows, ...legacyRows]) {
+    const existing = merged.get(row.category_slug);
+    if (existing) {
+      existing.answered += row.answered;
+      existing.correct += row.correct;
+    } else {
+      merged.set(row.category_slug, { ...row });
+    }
+  }
+  return Array.from(merged.values());
+}
+
+/**
+ * Games/answered/correct per game mode — the performance screen's "by mode"
+ * breakdown. Legacy 'quick' sessions (removed Quick Quiz) fold into 'mixed'
+ * at the call site rather than here so the raw modes stay queryable.
+ */
+export async function getModeAggregates(): Promise<
+  { trivia_mode: string; games: number; answered: number; correct: number }[]
+> {
+  const database = await openDatabase();
+  return database.getAllAsync<{
+    trivia_mode: string;
+    games: number;
+    answered: number;
+    correct: number;
+  }>(
+    `SELECT trivia_mode,
+            COUNT(*) as games,
+            SUM(total_questions) as answered,
+            SUM(correct_answers) as correct
+       FROM trivia_sessions
+      GROUP BY trivia_mode`
+  );
+}
+
+/**
+ * Lifetime session-level totals the overview stats don't carry: perfect games
+ * (all questions right) and total seconds of play (elapsed_time is NULL on
+ * some legacy rows; SUM skips them).
+ */
+export async function getLifetimeSessionExtras(): Promise<{
+  perfectGames: number;
+  totalPlaySeconds: number;
+}> {
+  const database = await openDatabase();
+  const row = await database.getFirstAsync<{ perfect: number | null; seconds: number | null }>(
+    `SELECT SUM(CASE WHEN total_questions > 0 AND correct_answers = total_questions THEN 1 ELSE 0 END) as perfect,
+            SUM(elapsed_time) as seconds
+       FROM trivia_sessions`
+  );
+  return { perfectGames: row?.perfect ?? 0, totalPlaySeconds: row?.seconds ?? 0 };
 }
 
 /**

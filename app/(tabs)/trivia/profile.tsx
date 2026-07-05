@@ -206,7 +206,17 @@ export default function TriviaProfileScreen() {
   const { stats } = profile;
   const flag = countryFlagEmoji(profile.country_code);
 
-  const overviewRows = [
+  // "YYYY-MM-DD" → localized long date. Parsed at midday so negative UTC
+  // offsets can't shift the displayed day backwards; a raw new Date(isoDate)
+  // parses as UTC midnight.
+  const memberSinceDate = (() => {
+    const d = new Date(`${profile.member_since}T12:00:00`);
+    return Number.isNaN(d.getTime())
+      ? profile.member_since
+      : d.toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
+  })();
+
+  const statTiles = [
     {
       icon: <Target size={iconSizes.xs} color={colors.primary} />,
       color: colors.primary,
@@ -290,7 +300,7 @@ export default function TriviaProfileScreen() {
                         </Text.Title>
                       </XStack>
                       <Text.Caption color={contrastColor} opacity={0.8}>
-                        {t('memberSince', { date: profile.member_since })}
+                        {t('memberSince', { date: memberSinceDate })}
                       </Text.Caption>
                       {isSelf && (
                         <XStack
@@ -314,52 +324,67 @@ export default function TriviaProfileScreen() {
               </View>
             </Animated.View>
 
-            {/* Lifetime overview */}
+            {/* Lifetime overview — 2×2 stat tiles (the same tile grammar the
+                performance screen speaks), replacing the old label/value rows. */}
             <Animated.View entering={FadeIn.delay(100).duration(400).springify()}>
-              <View style={[profileShadow.card, { borderRadius: radius.lg }]}>
-                <YStack
-                  backgroundColor={colors.cardBackground}
-                  borderRadius={radius.lg}
-                  padding={spacing.lg}
-                  gap={spacing.md}
-                >
-                  {overviewRows.map((row, index) => (
-                    <XStack key={index} alignItems="center" gap={spacing.sm}>
-                      <YStack
-                        width={iconSizes.xl}
-                        height={iconSizes.xl}
-                        borderRadius={radius.sm}
-                        backgroundColor={`${row.color}20`}
-                        justifyContent="center"
-                        alignItems="center"
+              <YStack gap={spacing.md}>
+                {[statTiles.slice(0, 2), statTiles.slice(2)].map((rowTiles, rowIndex) => (
+                  <XStack key={rowIndex} gap={spacing.md}>
+                    {rowTiles.map((tile) => (
+                      <View
+                        key={tile.label}
+                        style={[profileShadow.card, { borderRadius: radius.lg, flex: 1 }]}
                       >
-                        {row.icon}
-                      </YStack>
-                      <Text.Label
-                        flex={1}
-                        color={colors.text}
-                        fontFamily={FONT_FAMILIES.medium}
-                        numberOfLines={1}
-                      >
-                        {row.label}
-                      </Text.Label>
-                      <YStack alignItems="flex-end">
-                        <Text.Label color={colors.text} fontFamily={FONT_FAMILIES.bold}>
-                          {row.value}
-                        </Text.Label>
-                        {row.micro ? (
-                          <Text.Caption
-                            color={colors.textMuted}
-                            fontSize={typography.fontSize.tiny}
+                        <YStack
+                          backgroundColor={colors.cardBackground}
+                          borderRadius={radius.lg}
+                          padding={spacing.md}
+                          gap={spacing.sm}
+                        >
+                          <YStack
+                            width={iconSizes.xl}
+                            height={iconSizes.xl}
+                            borderRadius={radius.sm}
+                            backgroundColor={`${tile.color}20`}
+                            justifyContent="center"
+                            alignItems="center"
                           >
-                            {row.micro}
-                          </Text.Caption>
-                        ) : null}
-                      </YStack>
-                    </XStack>
-                  ))}
-                </YStack>
-              </View>
+                            {tile.icon}
+                          </YStack>
+                          <YStack>
+                            <Text.Title
+                              color={colors.text}
+                              fontFamily={FONT_FAMILIES.bold}
+                              numberOfLines={1}
+                            >
+                              {tile.value}
+                            </Text.Title>
+                            <Text.Tiny
+                              color={colors.textMuted}
+                              textTransform="uppercase"
+                              letterSpacing={0.8}
+                              fontFamily={FONT_FAMILIES.semibold}
+                              numberOfLines={1}
+                            >
+                              {tile.label}
+                            </Text.Tiny>
+                            {tile.micro ? (
+                              <Text.Tiny
+                                color={colors.textMuted}
+                                fontFamily={FONT_FAMILIES.medium}
+                                numberOfLines={1}
+                                fontSize={typography.fontSize.tiny}
+                              >
+                                {tile.micro}
+                              </Text.Tiny>
+                            ) : null}
+                          </YStack>
+                        </YStack>
+                      </View>
+                    ))}
+                  </XStack>
+                ))}
+              </YStack>
             </Animated.View>
 
             {/* Standing per leaderboard window */}

@@ -35,6 +35,7 @@ function CategoryProgressBar({
 }) {
   const { typography, spacing } = useResponsive();
   const textColor = isDark ? '#FFFFFF' : hexColors.light.text;
+  const mutedColor = isDark ? hexColors.dark.textMuted : hexColors.light.textMuted;
   const trackColor = isDark ? hexColors.dark.border : hexColors.light.border;
   const progressColor =
     category.color_hex || (isDark ? hexColors.dark.primary : hexColors.light.primary);
@@ -49,15 +50,21 @@ function CategoryProgressBar({
     >
       <YStack gap={spacing.xs}>
         <XStack alignItems="center" justifyContent="space-between">
-          <XStack alignItems="center" gap={spacing.sm}>
+          <XStack alignItems="center" gap={spacing.sm} flexShrink={1}>
             {getLucideIcon(category.icon, typography.fontSize.title, progressColor)}
-            <Text.Label color={textColor} fontFamily={FONT_FAMILIES.medium}>
+            <Text.Label color={textColor} fontFamily={FONT_FAMILIES.medium} numberOfLines={1}>
               {category.name}
             </Text.Label>
           </XStack>
-          <Text.Caption color={textColor} fontFamily={FONT_FAMILIES.semibold}>
-            {percentage}%
-          </Text.Caption>
+          <XStack alignItems="baseline" gap={spacing.xs}>
+            {/* The denominator: a bare % hid whether it meant 2 answers or 200. */}
+            <Text.Caption color={mutedColor} fontSize={typography.fontSize.tiny}>
+              {`${category.correct}/${category.answered}`}
+            </Text.Caption>
+            <Text.Caption color={textColor} fontFamily={FONT_FAMILIES.semibold}>
+              {percentage}%
+            </Text.Caption>
+          </XStack>
         </XStack>
         <View
           style={{
@@ -102,14 +109,10 @@ export default function CategoriesAccuracyScreen() {
       try {
         if (isRefresh) setRefreshing(true);
 
-        const categoriesData = await triviaService.getCategoriesWithProgress(locale);
-
-        // Filter categories with accuracy > 0 and sort high to low
-        const categoriesWithAccuracy = categoriesData
-          .filter((c) => c.total > 0 && c.accuracy > 0)
-          .sort((a, b) => b.accuracy - a.accuracy);
-
-        setCategories(categoriesWithAccuracy);
+        // Play-history categories (already answered > 0), best accuracy first.
+        // A 0% category with real answers is signal, so no accuracy floor.
+        const categoriesData = await triviaService.getCategoryAccuracy(locale);
+        setCategories([...categoriesData].sort((a, b) => b.accuracy - a.accuracy));
       } catch (error) {
         console.error('Error loading categories data:', error);
       } finally {
