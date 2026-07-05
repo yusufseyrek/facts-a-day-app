@@ -22,17 +22,19 @@ const IOS_PODS = [
 // Android Gradle dependencies. Gradle has no equivalent compatibility
 // resolution, so these are hand-pinned to the newest adapters built against
 // the play-services-ads version that react-native-google-mobile-ads ships
-// (25.0.0 as of RNGMA 16.3.3 — check node_modules/react-native-google-mobile-ads/
-// package.json sdkVersions). Newer adapters (unity 4.18+, vungle 7.7.3+) are
-// built against play-services-ads 25.2.0 and would transitively drag the core
-// ads SDK past what the wrapper was tested with — revisit when RNGMA bumps
-// its GMA pin. The adapter POMs at
-// https://dl.google.com/dl/android/maven2/com/google/ads/mediation/ declare
-// each version's play-services-ads target.
+// (25.4.0 as of RNGMA 16.4.0 — check node_modules/react-native-google-mobile-ads/
+// package.json sdkVersions.android.googleMobileAds). Each adapter's POM at
+// https://dl.google.com/dl/android/maven2/com/google/ads/mediation/ declares its
+// play-services-ads target; the versions below all target 25.4.0, so they won't
+// transitively drag the core ads SDK past what the wrapper pins. These pins are
+// ONLY valid alongside RNGMA 16.4.0 — bump them together with the wrapper, never
+// standalone. Note the Unity adapter POM does NOT pull unity-ads transitively, so
+// the unity-ads SDK is pinned separately and the two Unity lines move together
+// (adapter X.Y.Z.0 pairs with unity-ads X.Y.Z).
 const ANDROID_DEPENDENCIES = [
-  "com.google.ads.mediation:vungle:7.7.2.0",
-  "com.unity3d.ads:unity-ads:4.17.0",
-  "com.google.ads.mediation:unity:4.17.0.0",
+  "com.google.ads.mediation:vungle:7.7.4.2",
+  "com.unity3d.ads:unity-ads:4.19.0",
+  "com.google.ads.mediation:unity:4.19.0.0",
 ];
 
 /**

@@ -1,6 +1,3 @@
-diff --git a/node_modules/react-native-google-mobile-ads/.bun-tag-fe1e80eb5557ab25 b/.bun-tag-fe1e80eb5557ab25
-new file mode 100644
-index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
 diff --git a/android/src/main/java/io/invertase/googlemobileads/ReactNativeGoogleMobileAdsNativeAdView.kt b/android/src/main/java/io/invertase/googlemobileads/ReactNativeGoogleMobileAdsNativeAdView.kt
 index eecb15788c40f16a3a4ca64e392566f12a176293..c2875d29b9b90cc99896d4013dd2b308bb2e7efc 100644
 --- a/android/src/main/java/io/invertase/googlemobileads/ReactNativeGoogleMobileAdsNativeAdView.kt
