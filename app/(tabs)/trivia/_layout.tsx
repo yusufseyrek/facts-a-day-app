@@ -46,7 +46,8 @@ export default function TriviaTabLayout() {
       />
       <Stack.Screen
         name="profile"
-        // Title is set by the screen itself once the player's name is known.
+        // Generic title on purpose: the hero card owns the player's name, and
+        // a large-title header repeating it read as a double username.
         options={{ title: t('playerProfile'), headerRight: queueHeaderRight }}
       />
     </Stack>
