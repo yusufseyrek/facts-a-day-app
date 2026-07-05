@@ -304,6 +304,13 @@ export const HOME_FEED = {
 export const LAYOUT = {
   /** Maximum content width for tablet layouts (better readability) */
   MAX_CONTENT_WIDTH: 800,
+  /**
+   * Corner radius for DOCKED native form sheets (player, remove-ads,
+   * hint-store) on Android and pre-26 iOS. Floating iOS 26 sheets must NOT
+   * receive a custom radius — see the sheetCornerRadius note in
+   * app/_layout.tsx.
+   */
+  SHEET_CORNER_RADIUS: 24,
   /** Tablet breakpoint width (iPad mini is 768px wide) */
   TABLET_BREAKPOINT: 768,
   /** Multiplier for scaling phone values to tablet */

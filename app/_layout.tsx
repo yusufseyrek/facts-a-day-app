@@ -50,7 +50,7 @@ import { AppCheckBlockingScreen } from '../src/components/AppCheckBlockingScreen
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { PersistentMiniPlayer } from '../src/components/player/PersistentMiniPlayer';
 import { SplashOverlay } from '../src/components/SplashOverlay';
-import { STORAGE_KEYS } from '../src/config/app';
+import { LAYOUT, STORAGE_KEYS } from '../src/config/app';
 import { isAppCheckInitFailed, subscribeAppCheckFailure } from '../src/config/appCheckState';
 import {
   enableCrashlyticsConsoleLogging,
@@ -75,6 +75,7 @@ import {
   useOnboarding,
   waitForFeedLoaded,
 } from '../src/contexts';
+import { formSheetFloats } from '../src/hooks/useFormSheetBottomPadding';
 import { getLocaleFromCode, I18nProvider } from '../src/i18n';
 import { initializeAdsForReturningUser } from '../src/services/ads';
 import { initAnalytics, syncEngagementPersonProps } from '../src/services/analytics';
@@ -230,6 +231,16 @@ function AppContent() {
   // (gray/dark blue) under the paywall.
   const paywallBg = paywallThemeColors[theme].bg;
   const removeAdsBackgroundColor = paywallBg[paywallBg.length - 1];
+
+  // Corner radius for the form-sheet routes below. On iOS 26 the sheet FLOATS
+  // detached from the screen edges, and UIKit clips it (content included) with
+  // an automatic radius concentric to the display's corners — but ONLY when
+  // `preferredCornerRadius` is left automatic. Setting ANY custom value
+  // (sheetCornerRadius) zeroes the clip containers' radius and the sheet
+  // renders with square corners (verified on the iOS 26 sim by inspecting the
+  // UIDropShadowView's clip layers). So: omit the prop when sheets float, keep
+  // the designed 24 for docked sheets (Android, pre-26 iOS) where it works.
+  const sheetCornerRadius = formSheetFloats() ? undefined : LAYOUT.SHEET_CORNER_RADIUS;
 
   // Re-check onboarding status when navigating to onboarding paths
   // This ensures the reset onboarding button works correctly
@@ -396,7 +407,7 @@ function AppContent() {
             presentation: 'formSheet',
             sheetAllowedDetents: [0.92],
             sheetGrabberVisible: true,
-            sheetCornerRadius: 24,
+            sheetCornerRadius,
             headerShown: false,
             contentStyle: { backgroundColor },
           }}
@@ -422,7 +433,7 @@ function AppContent() {
             presentation: 'formSheet',
             sheetAllowedDetents: 'fitToContents',
             sheetGrabberVisible: true,
-            sheetCornerRadius: 24,
+            sheetCornerRadius,
             sheetExpandsWhenScrolledToEdge: false,
             headerShown: false,
             contentStyle: { backgroundColor: removeAdsBackgroundColor },
@@ -438,7 +449,7 @@ function AppContent() {
             presentation: 'formSheet',
             sheetAllowedDetents: 'fitToContents',
             sheetGrabberVisible: true,
-            sheetCornerRadius: 24,
+            sheetCornerRadius,
             sheetExpandsWhenScrolledToEdge: false,
             headerShown: false,
             contentStyle: { backgroundColor: removeAdsBackgroundColor },

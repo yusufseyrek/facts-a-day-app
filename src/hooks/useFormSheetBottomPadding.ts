@@ -6,6 +6,19 @@ import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { useResponsive } from '../utils/useResponsive';
 
 /**
+ * True when iOS presents form sheets as FLOATING cards detached from the
+ * screen edge (iOS 26 Liquid Glass). Pre-26 iOS and Android dock the sheet
+ * flush to the bottom of the screen.
+ *
+ * Floating sheets are clipped by UIKit on all four corners with an automatic
+ * radius concentric to the display — but ONLY while `sheetCornerRadius` is
+ * left unset (see the form-sheet routes in app/_layout.tsx).
+ */
+export function formSheetFloats(): boolean {
+  return Platform.OS === 'ios' && isLiquidGlassAvailable();
+}
+
+/**
  * Bottom padding for `fitToContents` form sheets (remove-ads, hint-store).
  *
  * On iOS 26 the form sheet FLOATS detached from the screen edge and never
@@ -18,6 +31,5 @@ import { useResponsive } from '../utils/useResponsive';
 export function useFormSheetBottomPadding(): number {
   const insets = useSafeAreaInsets();
   const { spacing } = useResponsive();
-  const sheetFloats = Platform.OS === 'ios' && isLiquidGlassAvailable();
-  return sheetFloats ? spacing.lg : Math.max(insets.bottom, spacing.md) + spacing.md;
+  return formSheetFloats() ? spacing.lg : Math.max(insets.bottom, spacing.md) + spacing.md;
 }

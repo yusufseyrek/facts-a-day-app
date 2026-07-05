@@ -12,6 +12,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LAYOUT } from '../config/app';
+import { formSheetFloats } from '../hooks/useFormSheetBottomPadding';
 import { hexColors, useTheme } from '../theme';
 import { useResponsive } from '../utils/useResponsive';
 
@@ -63,6 +64,10 @@ export function BottomSheet({
   const isDark = theme === 'dark';
   const insets = useSafeAreaInsets();
   const { spacing, radius } = useResponsive();
+  // Match the OS sheet language: iOS 26 floats sheets as cards detached from
+  // the screen edge with all four corners rounded; pre-26 iOS and Android dock
+  // them flush to the bottom (top corners only).
+  const floats = formSheetFloats();
 
   // Two-phase close (DialogShell pattern): unmount the card first so its exiting
   // animation plays, notify the parent only after it finishes.
@@ -123,7 +128,15 @@ export function BottomSheet({
           androidScrim={isDark ? 'rgba(0,0,0,0.85)' : 'rgba(0,0,0,0.55)'}
           onPress={dismissible ? requestClose : undefined}
         />
-        <YStack flex={1} justifyContent="flex-end" pointerEvents="box-none">
+        <YStack
+          flex={1}
+          justifyContent="flex-end"
+          pointerEvents="box-none"
+          // Floating: inset the card from the screen edges so the rounded
+          // bottom reads as a detached card clear of the home indicator.
+          paddingBottom={floats ? insets.bottom : 0}
+          paddingHorizontal={floats ? spacing.sm : 0}
+        >
           {showContent && (
             <GestureDetector gesture={panGesture}>
               <Animated.View
@@ -137,8 +150,14 @@ export function BottomSheet({
                     backgroundColor: colors.cardBackground,
                     borderTopLeftRadius: radius.xl,
                     borderTopRightRadius: radius.xl,
-                    paddingBottom: insets.bottom + spacing.md,
+                    // Docked: the safe-area inset lives INSIDE the card, which
+                    // runs to the screen's bottom edge.
+                    paddingBottom: floats ? spacing.md : insets.bottom + spacing.md,
                     overflow: 'hidden',
+                  },
+                  floats && {
+                    borderBottomLeftRadius: radius.xl,
+                    borderBottomRightRadius: radius.xl,
                   },
                   dragStyle,
                 ]}
