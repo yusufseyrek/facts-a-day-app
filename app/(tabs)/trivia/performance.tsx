@@ -42,6 +42,7 @@ import {
   Tag,
   Zap,
 } from '../../../src/components/icons';
+import { ShimmerPlaceholder } from '../../../src/components/ShimmerPlaceholder';
 import { XStack, YStack } from '../../../src/components/Stacks';
 import { getTriviaModeBadge, TriviaResults } from '../../../src/components/trivia';
 import { FONT_FAMILIES, Text } from '../../../src/components/Typography';
@@ -1009,6 +1010,268 @@ const perfShadowStyles = StyleSheet.create({
   },
 });
 
+/**
+ * Loading skeleton mirroring the loaded dashboard from the same tokens, so
+ * the swap to real data doesn't shift anything (the profile screen's skeleton
+ * grammar). The lifetime banner renders its REAL gradient frame — both stops
+ * derive from the theme, known before the fetch — with translucent shimmer
+ * marks on top; the quiet cards below shimmer in the border tone.
+ */
+function PerformanceSkeleton({ isDark }: { isDark: boolean }) {
+  const { spacing, radius, iconSizes, typography, media } = useResponsive();
+  const colors = isDark ? hexColors.dark : hexColors.light;
+  const { lineHeight } = typography;
+
+  // Banner frame — the exact LifetimeBanner recipe (stops, glow, circles).
+  const gradStart = darkenColor(colors.neonPurple, 0.22);
+  const gradEnd = darkenColor(colors.primary, 0.3);
+  const contrastColor = getContrastColor(gradStart);
+  const onDark = contrastColor === '#FFFFFF';
+  const markColor = onDark ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.32)';
+  const hairline = onDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.08)';
+  const circleA = onDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)';
+  const circleB = onDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.04)';
+  const s = media.topicCardSize * 0.7;
+  const glowColor = blendHexColors(colors.neonPurple, colors.primary, 0.5);
+
+  const bannerCell = (key: number) => (
+    <YStack
+      key={key}
+      flex={1}
+      gap={spacing.sm}
+      paddingVertical={spacing.sm}
+      paddingHorizontal={spacing.sm}
+    >
+      <ShimmerPlaceholder
+        width={iconSizes.xl}
+        height={iconSizes.xl}
+        borderRadius={iconSizes.xl / 2}
+        color={markColor}
+      />
+      {/* The real cell stacks Title flush over Tiny (no gap), so these marks
+          plus the visual gap must sum to lineHeight.title + lineHeight.tiny —
+          anything more and the banner shrinks when data lands. */}
+      <YStack gap={spacing.xs}>
+        <ShimmerPlaceholder
+          width="55%"
+          height={lineHeight.title - spacing.xs}
+          color={markColor}
+        />
+        <ShimmerPlaceholder width="75%" height={lineHeight.tiny} color={markColor} />
+      </YStack>
+    </YStack>
+  );
+
+  const vHairline = (
+    <YStack width={1} alignSelf="stretch" marginVertical={spacing.xs} backgroundColor={hairline} />
+  );
+
+  // 7-day strip: fixed height pattern (no randomness — stable re-renders).
+  const stripHeight = spacing.xl + spacing.md;
+  const barFractions = [0.45, 0.7, 0.35, 1, 0.55, 0.8, 0.6];
+
+  const modeRow = (key: number) => (
+    <XStack key={key} alignItems="center" gap={spacing.sm}>
+      <ShimmerPlaceholder width={iconSizes.xl} height={iconSizes.xl} borderRadius={radius.sm} />
+      {/* The real row stacks label flush over the games count, and the count
+          keeps the CAPTION line box even at tiny fontSize — so the count mark
+          is lineHeight.caption minus the one gap this column adds, keeping the
+          row at the loaded height (the second gap stands in for the rail's
+          marginTop). */}
+      <YStack flex={1} gap={spacing.xs}>
+        <ShimmerPlaceholder width="45%" height={lineHeight.label} />
+        <ShimmerPlaceholder width="30%" height={lineHeight.caption - spacing.xs} />
+        <ShimmerPlaceholder width="100%" height={spacing.xs} borderRadius={radius.full} />
+      </YStack>
+      <YStack alignItems="flex-end" gap={spacing.xs}>
+        <ShimmerPlaceholder width={44} height={lineHeight.label} />
+        <ShimmerPlaceholder width={32} height={lineHeight.caption - spacing.xs} />
+      </YStack>
+    </XStack>
+  );
+
+  const categoryRow = (key: number) => (
+    <YStack key={key} gap={spacing.xs}>
+      <XStack alignItems="center" justifyContent="space-between">
+        <XStack alignItems="center" gap={spacing.sm}>
+          <ShimmerPlaceholder
+            width={typography.fontSize.title}
+            height={typography.fontSize.title}
+            borderRadius={4}
+          />
+          <ShimmerPlaceholder width={110} height={lineHeight.label} />
+        </XStack>
+        <ShimmerPlaceholder width={64} height={lineHeight.caption} />
+      </XStack>
+      <ShimmerPlaceholder width="100%" height={spacing.sm} borderRadius={spacing.sm / 2} />
+    </YStack>
+  );
+
+  const iconContainerSize = media.topicCardSize * 0.5;
+  const sessionRow = (key: number) => (
+    <View key={key} style={[perfShadowStyles.card, { borderRadius: radius.lg }]}>
+      <XStack
+        backgroundColor={colors.cardBackground}
+        borderRadius={radius.lg}
+        padding={spacing.lg}
+        alignItems="center"
+        gap={spacing.sm}
+      >
+        <ShimmerPlaceholder
+          width={iconContainerSize}
+          height={iconContainerSize}
+          borderRadius={radius.sm}
+        />
+        <YStack flex={1} gap={spacing.xs}>
+          <ShimmerPlaceholder width="50%" height={lineHeight.label} />
+          <ShimmerPlaceholder width="35%" height={lineHeight.caption} />
+        </YStack>
+        <YStack alignItems="flex-end" gap={spacing.xs}>
+          <ShimmerPlaceholder width={72} height={lineHeight.caption} />
+          <ShimmerPlaceholder width={56} height={lineHeight.caption} />
+        </YStack>
+      </XStack>
+    </View>
+  );
+
+  return (
+    <YStack marginVertical={spacing.lg} gap={spacing.xl}>
+      {/* Lifetime banner */}
+      <View style={[perfShadowStyles.banner, { borderRadius: radius.xl, shadowColor: glowColor }]}>
+        <LinearGradient
+          colors={[gradStart, gradEnd]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ borderRadius: radius.xl, overflow: 'hidden' }}
+        >
+          <View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              top: -s * 0.6,
+              right: -s * 0.5,
+              width: s * 1.8,
+              height: s * 1.8,
+              borderRadius: s * 0.9,
+              backgroundColor: circleA,
+            }}
+          />
+          <View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              bottom: -s * 0.7,
+              left: -s * 0.4,
+              width: s * 1.4,
+              height: s * 1.4,
+              borderRadius: s * 0.7,
+              backgroundColor: circleB,
+            }}
+          />
+          <YStack padding={spacing.lg} gap={spacing.sm}>
+            <ShimmerPlaceholder width={96} height={lineHeight.caption} color={markColor} />
+            <YStack>
+              <XStack>
+                {bannerCell(0)}
+                {vHairline}
+                {bannerCell(1)}
+              </XStack>
+              <View style={{ height: 1, backgroundColor: hairline, marginVertical: spacing.xs }} />
+              <XStack>
+                {bannerCell(2)}
+                {vHairline}
+                {bannerCell(3)}
+              </XStack>
+            </YStack>
+          </YStack>
+        </LinearGradient>
+      </View>
+
+      {/* Trailing week activity */}
+      <PerfCard isDark={isDark}>
+        <YStack gap={spacing.md}>
+          <XStack alignItems="center" justifyContent="space-between">
+            <ShimmerPlaceholder width={90} height={lineHeight.tiny} />
+            {/* +4: the real this-week pill wraps its caption in paddingVertical
+                2, and the pill is what sets the loaded header row's height. */}
+            <ShimmerPlaceholder
+              width={72}
+              height={lineHeight.caption + 4}
+              borderRadius={radius.full}
+            />
+          </XStack>
+          <XStack gap={spacing.sm} alignItems="flex-end">
+            {barFractions.map((fraction, index) => (
+              <YStack key={index} flex={1} alignItems="center" gap={spacing.xs}>
+                <ShimmerPlaceholder
+                  width="55%"
+                  height={stripHeight * fraction}
+                  borderRadius={radius.full}
+                />
+                <ShimmerPlaceholder width={spacing.md} height={lineHeight.tiny} />
+              </YStack>
+            ))}
+          </XStack>
+        </YStack>
+      </PerfCard>
+
+      {/* Per-mode breakdown */}
+      <YStack gap={spacing.md}>
+        <ShimmerPlaceholder width={120} height={lineHeight.title} />
+        <PerfCard isDark={isDark}>
+          <YStack gap={spacing.lg}>{[0, 1, 2, 3].map(modeRow)}</YStack>
+        </PerfCard>
+      </YStack>
+
+      {/* Accuracy by category */}
+      <View>
+        <YStack marginBottom={spacing.md} gap={spacing.xs}>
+          <ShimmerPlaceholder width={180} height={lineHeight.title} />
+          <ShimmerPlaceholder width="70%" height={lineHeight.caption} />
+        </YStack>
+        <PerfCard isDark={isDark}>
+          <YStack gap={spacing.lg}>
+            {Array.from({ length: DISPLAY_LIMITS.MAX_CATEGORIES }, (_, i) => categoryRow(i))}
+          </YStack>
+        </PerfCard>
+      </View>
+
+      {/* Achievements */}
+      <PerfCard isDark={isDark}>
+        <YStack gap={spacing.md}>
+          <XStack alignItems="center" justifyContent="space-between">
+            <XStack alignItems="center" gap={spacing.sm}>
+              <ShimmerPlaceholder width={iconSizes.sm} height={iconSizes.sm} borderRadius={4} />
+              <ShimmerPlaceholder width={110} height={lineHeight.label} />
+            </XStack>
+            <ShimmerPlaceholder width={80} height={lineHeight.caption} />
+          </XStack>
+          <XStack gap={spacing.xs}>
+            {[0, 1, 2, 3, 4, 5].map((i) => (
+              <ShimmerPlaceholder
+                key={i}
+                width={iconSizes.xl}
+                height={iconSizes.xl}
+                borderRadius={iconSizes.xl / 2}
+              />
+            ))}
+          </XStack>
+        </YStack>
+      </PerfCard>
+
+      {/* Recent tests */}
+      <View>
+        <XStack alignItems="center" marginBottom={spacing.md}>
+          <ShimmerPlaceholder width={140} height={lineHeight.title} />
+        </XStack>
+        <YStack gap={spacing.md}>
+          {Array.from({ length: DISPLAY_LIMITS.MAX_ACTIVITIES }, (_, i) => sessionRow(i))}
+        </YStack>
+      </View>
+    </YStack>
+  );
+}
+
 export default function PerformanceScreen() {
   const { theme } = useTheme();
   const { t, locale } = useTranslation();
@@ -1196,9 +1459,16 @@ export default function PerformanceScreen() {
     return (
       <View style={{ flex: 1, backgroundColor: bgColor }}>
         <StatusBar style={isDark ? 'light' : 'dark'} />
-        <YStack flex={1} justifyContent="center" alignItems="center">
-          <ActivityIndicator size="large" color={primaryColor} />
-        </YStack>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          overScrollMode="never"
+          contentInsetAdjustmentBehavior="automatic"
+          contentContainerStyle={{ paddingBottom: bannerInset }}
+        >
+          <ContentContainer>
+            <PerformanceSkeleton isDark={isDark} />
+          </ContentContainer>
+        </ScrollView>
       </View>
     );
   }
