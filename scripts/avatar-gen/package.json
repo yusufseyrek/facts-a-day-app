@@ -1,0 +1,9 @@
+{
+  "name": "avatar-gen",
+  "private": true,
+  "description": "Standalone generator for src/config/avatarArt.ts (kept out of the app dependency tree)",
+  "dependencies": {
+    "@dicebear/collection": "9.4.2",
+    "@dicebear/core": "9.4.2"
+  }
+}

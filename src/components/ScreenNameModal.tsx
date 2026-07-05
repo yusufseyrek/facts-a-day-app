@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, TextInput } from 'react-native';
+import { Pressable, ScrollView, TextInput } from 'react-native';
 
-import { AVATAR_ICONS, AVATAR_TOKENS } from '../config/avatars';
+import { AVATAR_CATALOG, AVATAR_RAIL_ROWS, identityColor } from '../config/avatars';
 import { useTranslation } from '../i18n';
 import * as api from '../services/api';
 import * as userService from '../services/user';
 import { hexColors, useTheme } from '../theme';
-import { avatarColor } from '../utils/colors';
 import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../utils/responsive';
 import { generateScreenName } from '../utils/screenNameGenerator';
 import { useResponsive } from '../utils/useResponsive';
@@ -42,6 +41,17 @@ type Availability = 'idle' | 'checking' | 'available' | 'taken' | 'invalid';
 const NAME_MIN = 3;
 const NAME_MAX = 20;
 
+// The avatar rail: a horizontally scrolling rainbow of signature-colored
+// discs. Fixed row count keeps the dialog height constant however large the
+// catalog grows (DialogShell doesn't scroll vertically, and keyboardAware
+// lifts the card above the keyboard on small screens). Each column of
+// AVATAR_RAIL_ROWS shares one signature hue (assigned in config/avatars), so
+// the rail sweeps the rainbow left-to-right.
+const RAIL_COLUMNS = Array.from(
+  { length: Math.ceil(AVATAR_CATALOG.length / AVATAR_RAIL_ROWS) },
+  (_, i) => AVATAR_CATALOG.slice(i * AVATAR_RAIL_ROWS, i * AVATAR_RAIL_ROWS + AVATAR_RAIL_ROWS)
+);
+
 /**
  * Claim or change the unique screen name. Availability is checked live
  * (debounced) against the backend; the actual claim still handles the 409
@@ -58,8 +68,7 @@ export function ScreenNameModal({
 }: ScreenNameModalProps) {
   const { t, locale } = useTranslation();
   const { theme } = useTheme();
-  const { spacing, radius, typography, maxModalWidth, iconSizes, borderWidths } =
-    useResponsive();
+  const { spacing, radius, typography, maxModalWidth, iconSizes, borderWidths } = useResponsive();
 
   const [name, setName] = useState(currentName ?? '');
   const [avatar, setAvatar] = useState<string | null>(currentAvatar);
@@ -154,6 +163,10 @@ export function ScreenNameModal({
     }
   }, [availability, t, theme]);
 
+  // Legacy emoji values (pre-token rows) show in the preview but never match
+  // a rail disc, so they must not dim the rail as if a disc were chosen.
+  const railHasSelection = AVATAR_CATALOG.some((entry) => entry.token === avatar);
+
   // An avatar-only change is a valid submit (rename PATCHes both fields); the
   // name rules still gate it so we never submit an invalid handle.
   const canSubmit =
@@ -194,15 +207,15 @@ export function ScreenNameModal({
         paddingBottom={spacing.md}
         gap={spacing.md}
       >
-        <Text.Caption color="$textSecondary">{t('screenNameHint')}</Text.Caption>
-
-        {/* Avatar picker: preview disc + curated emoji grid. Tapping the
-            selected emoji again clears back to the initial disc. */}
+        {/* Avatar picker: live preview disc + the rainbow rail. The preview
+            shows exactly what other users will see (signature color when a
+            token is picked, name-hash color otherwise); tapping the selected
+            disc again clears back to the initial disc. */}
         <XStack gap={spacing.md} alignItems="center">
           <AvatarDisc
             name={trimmed || '?'}
             avatar={avatar}
-            color={avatarColor(trimmed || '?', hexColors[theme])}
+            color={identityColor(trimmed || '?', avatar, hexColors[theme])}
             size={iconSizes.xl + spacing.md}
           />
           <YStack flex={1} gap={2}>
@@ -210,117 +223,133 @@ export function ScreenNameModal({
             <Text.Tiny color="$textSecondary">{t('avatarPickerHint')}</Text.Tiny>
           </YStack>
         </XStack>
-        <XStack flexWrap="wrap" gap={spacing.xs} justifyContent="center">
-          {AVATAR_TOKENS.map((token) => {
-            const selected = avatar === token;
-            const AvatarIcon = AVATAR_ICONS[token];
-            return (
-              <Pressable
-                key={token}
-                onPress={() => setAvatar(selected ? null : token)}
-                disabled={isSubmitting}
-                accessibilityRole="button"
-                accessibilityLabel={token}
-                accessibilityState={{ selected }}
-                style={({ pressed }) => ({
-                  width: iconSizes.xl,
-                  height: iconSizes.xl,
-                  borderRadius: iconSizes.xl / 2,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: selected
-                    ? hexColors[theme].primaryLight
-                    : hexColors[theme].surface,
-                  borderWidth: selected ? 2 : borderWidths.hairline,
-                  borderColor: selected ? hexColors[theme].primary : hexColors[theme].border,
-                  opacity: pressed ? 0.7 : 1,
-                  transform: [{ scale: pressed ? 0.92 : 1 }],
-                })}
-              >
-                <AvatarIcon
-                  size={iconSizes.xl * 0.52}
-                  color={selected ? hexColors[theme].primary : hexColors[theme].textSecondary}
-                />
-              </Pressable>
-            );
-          })}
-        </XStack>
-
-        <XStack gap={spacing.sm} alignItems="stretch" style={{ flexShrink: 0 }}>
-          <TextInput
-            maxFontSizeMultiplier={DEFAULT_MAX_FONT_SIZE_MULTIPLIER}
-            value={name}
-            onChangeText={setName}
-            placeholder={t('screenNamePlaceholder')}
-            placeholderTextColor={hexColors[theme].textMuted}
-            autoCapitalize="none"
-            autoCorrect={false}
-            maxLength={NAME_MAX}
-            editable={!isSubmitting}
-            // No autoFocus: the keyboard would cover the avatar grid the
-            // moment the dialog opens; picking an avatar comes first now.
-            style={{
-              flex: 1,
-              backgroundColor: hexColors[theme].surface,
-              borderRadius: radius.md,
-              padding: spacing.md,
-              borderWidth: borderWidths.hairline,
-              borderColor: hexColors[theme].border,
-              fontSize: typography.fontSize.body,
-              color: hexColors[theme].text,
-            }}
-          />
-          {/* Dice roll: fills the input; the debounced availability check
-              fires through onChange state like any typed value. */}
-          <Pressable
-            onPress={() => setName(generateScreenName())}
-            disabled={isSubmitting}
-            accessibilityRole="button"
-            accessibilityLabel={t('screenNameRandomize')}
-            accessibilityState={{ disabled: isSubmitting }}
-            style={({ pressed }) => ({
-              opacity: isSubmitting ? 0.4 : pressed ? 0.7 : 1,
-              transform: [{ scale: pressed && !isSubmitting ? 0.95 : 1 }],
-              justifyContent: 'center',
-              alignItems: 'center',
-              aspectRatio: 1,
-              backgroundColor: hexColors[theme].surface,
-              borderRadius: radius.md,
-              borderWidth: borderWidths.hairline,
-              borderColor: hexColors[theme].border,
-            })}
-          >
-            <Shuffle size={iconSizes.sm} color={hexColors[theme].primary} />
-          </Pressable>
-        </XStack>
-
-        <XStack
-          justifyContent="space-between"
-          alignItems="center"
-          minHeight={typography.lineHeight.caption}
+        {/* Bleed the rail to the card edges so discs scroll-clip at the
+            dialog border instead of at the inner padding. */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ marginHorizontal: -spacing.lg, flexGrow: 0 }}
+          contentContainerStyle={{
+            paddingHorizontal: spacing.lg,
+            gap: spacing.xs,
+          }}
         >
-          {error ? (
-            <Text.Label
-              color={hexColors[theme].error}
-              fontSize={typography.fontSize.caption}
-              numberOfLines={1}
+          {RAIL_COLUMNS.map((column, colIdx) => (
+            <YStack key={colIdx} gap={spacing.xs}>
+              {column.map(({ token, colorKey }) => {
+                const selected = avatar === token;
+                // Once a pick is made, the rest of the rail steps back so the
+                // ringed choice glows; with no pick every disc stays vibrant.
+                const dimmed = railHasSelection && !selected;
+                const signature = hexColors[theme][colorKey];
+                const discSize = iconSizes.xl;
+                return (
+                  <Pressable
+                    key={token}
+                    onPress={() => setAvatar(selected ? null : token)}
+                    disabled={isSubmitting}
+                    accessibilityRole="button"
+                    accessibilityLabel={token}
+                    accessibilityState={{ selected }}
+                    style={({ pressed }) => ({
+                      width: discSize + 10,
+                      height: discSize + 10,
+                      borderRadius: (discSize + 10) / 2,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderWidth: 2,
+                      borderColor: selected ? signature : 'transparent',
+                      opacity: pressed ? 0.7 : dimmed ? 0.45 : 1,
+                      transform: [{ scale: pressed ? 0.92 : 1 }],
+                    })}
+                  >
+                    <AvatarDisc name="" avatar={token} color={signature} size={discSize} />
+                  </Pressable>
+                );
+              })}
+            </YStack>
+          ))}
+        </ScrollView>
+
+        {/* The name rules sit with the field they govern. */}
+        <YStack gap={spacing.xs}>
+          <Text.Caption color="$textSecondary">{t('screenNameHint')}</Text.Caption>
+          <XStack gap={spacing.sm} alignItems="stretch" style={{ flexShrink: 0 }}>
+            <TextInput
+              maxFontSizeMultiplier={DEFAULT_MAX_FONT_SIZE_MULTIPLIER}
+              value={name}
+              onChangeText={setName}
+              placeholder={t('screenNamePlaceholder')}
+              placeholderTextColor={hexColors[theme].textMuted}
+              autoCapitalize="none"
+              autoCorrect={false}
+              maxLength={NAME_MAX}
+              editable={!isSubmitting}
+              // No autoFocus: the keyboard would cover the avatar grid the
+              // moment the dialog opens; picking an avatar comes first now.
+              style={{
+                flex: 1,
+                backgroundColor: hexColors[theme].surface,
+                borderRadius: radius.md,
+                padding: spacing.md,
+                borderWidth: borderWidths.hairline,
+                borderColor: hexColors[theme].border,
+                fontSize: typography.fontSize.body,
+                color: hexColors[theme].text,
+              }}
+            />
+            {/* Dice roll: fills the input; the debounced availability check
+              fires through onChange state like any typed value. */}
+            <Pressable
+              onPress={() => setName(generateScreenName())}
+              disabled={isSubmitting}
+              accessibilityRole="button"
+              accessibilityLabel={t('screenNameRandomize')}
+              accessibilityState={{ disabled: isSubmitting }}
+              style={({ pressed }) => ({
+                opacity: isSubmitting ? 0.4 : pressed ? 0.7 : 1,
+                transform: [{ scale: pressed && !isSubmitting ? 0.95 : 1 }],
+                justifyContent: 'center',
+                alignItems: 'center',
+                aspectRatio: 1,
+                backgroundColor: hexColors[theme].surface,
+                borderRadius: radius.md,
+                borderWidth: borderWidths.hairline,
+                borderColor: hexColors[theme].border,
+              })}
             >
-              {error}
-            </Text.Label>
-          ) : statusLine ? (
-            <Text.Label
-              color={statusLine.color}
-              fontSize={typography.fontSize.caption}
-              numberOfLines={1}
-            >
-              {statusLine.text}
-            </Text.Label>
-          ) : (
-            <Text.Label color="$textSecondary" fontSize={typography.fontSize.caption}>
-              {trimmed.length}/{NAME_MAX}
-            </Text.Label>
-          )}
-        </XStack>
+              <Shuffle size={iconSizes.sm} color={hexColors[theme].primary} />
+            </Pressable>
+          </XStack>
+
+          <XStack
+            justifyContent="space-between"
+            alignItems="center"
+            minHeight={typography.lineHeight.caption}
+          >
+            {error ? (
+              <Text.Label
+                color={hexColors[theme].error}
+                fontSize={typography.fontSize.caption}
+                numberOfLines={1}
+              >
+                {error}
+              </Text.Label>
+            ) : statusLine ? (
+              <Text.Label
+                color={statusLine.color}
+                fontSize={typography.fontSize.caption}
+                numberOfLines={1}
+              >
+                {statusLine.text}
+              </Text.Label>
+            ) : (
+              <Text.Label color="$textSecondary" fontSize={typography.fontSize.caption}>
+                {trimmed.length}/{NAME_MAX}
+              </Text.Label>
+            )}
+          </XStack>
+        </YStack>
       </YStack>
     </DialogShell>
   );

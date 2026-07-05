@@ -4,6 +4,7 @@ import { ActivityIndicator, Alert, Pressable, TextInput, View } from 'react-nati
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 
+import { identityColor } from '../config/avatars';
 import { useTranslation } from '../i18n';
 import { SUPPORTED_LOCALES } from '../i18n/config';
 import {
@@ -20,7 +21,7 @@ import * as api from '../services/api';
 import * as userService from '../services/user';
 import { hexColors, useTheme } from '../theme';
 import { openInAppBrowser } from '../utils/browser';
-import { avatarColor, darkenColor, getContrastColor } from '../utils/colors';
+import { darkenColor, getContrastColor } from '../utils/colors';
 import { countryFlagEmoji } from '../utils/countryFlag';
 import { DEFAULT_MAX_FONT_SIZE_MULTIPLIER } from '../utils/responsive';
 import { useResponsive } from '../utils/useResponsive';
@@ -142,7 +143,7 @@ function CommentRow({
   const flag = countryFlagEmoji(comment.country_code);
 
   const name = comment.screen_name || '?';
-  const accent = avatarColor(name, palette);
+  const accent = identityColor(name, comment.avatar, palette);
   const avatarSize = iconSizes.xl + spacing.xs;
 
   // When a translation is available we show it by default and offer "See
@@ -190,7 +191,10 @@ function CommentRow({
               accessibilityRole="button"
               accessibilityLabel={t('commentOptions')}
               hitSlop={{ top: spacing.sm, bottom: spacing.sm, left: spacing.sm, right: spacing.sm }}
-              style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1, paddingHorizontal: spacing.xs })}
+              style={({ pressed }) => ({
+                opacity: pressed ? 0.5 : 1,
+                paddingHorizontal: spacing.xs,
+              })}
             >
               <Text.Label
                 color="$textMuted"
@@ -319,7 +323,7 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
   // leaderboard) while this composer is open.
   useEffect(
     () => userService.onIdentityChange((identity) => setScreenName(identity?.screenName ?? null)),
-    [],
+    []
   );
 
   const retryLoad = useCallback(async () => {
@@ -527,10 +531,7 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
   const inputLineHeight = typography.lineHeight.label;
   // Border counts toward the box height, so subtract it: border + pad + line +
   // pad + border === sendSize exactly.
-  const inputPadV = Math.max(
-    spacing.xs,
-    (sendSize - inputLineHeight) / 2 - borderWidths.hairline
-  );
+  const inputPadV = Math.max(spacing.xs, (sendSize - inputLineHeight) / 2 - borderWidths.hairline);
   // Bias a touch onto the bottom so the text isn't flush against the rounded
   // base; the send disc still bottom-aligns to the (now slightly taller) box.
   const inputPadBottom = inputPadV + spacing.xs / 2;
@@ -609,7 +610,11 @@ function FactCommentsComponent({ factId, categoryColor }: FactCommentsProps) {
                   {isPosting ? (
                     <ActivityIndicator size="small" color={getContrastColor(accent)} />
                   ) : (
-                    <Send size={iconSizes.md} color={getContrastColor(accent)} style={sendGlyphNudge} />
+                    <Send
+                      size={iconSizes.md}
+                      color={getContrastColor(accent)}
+                      style={sendGlyphNudge}
+                    />
                   )}
                 </GradientDisc>
               ) : (
