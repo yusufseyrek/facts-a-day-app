@@ -1,7 +1,8 @@
 /**
- * Compact queue-player control. A single instance floats at the top-left across
- * every screen (mounted once in PersistentMiniPlayer above the root navigator),
- * so playback is reachable wherever audio is active without cloning per screen.
+ * Compact queue-player control. A single instance floats at the top of every
+ * screen (mounted once in PersistentMiniPlayer above the root navigator, which
+ * owns WHICH corner it occupies), so playback is reachable wherever audio is
+ * active without cloning per screen.
  * A small rounded pill with two tap targets separated by a hairline: a filled
  * play/pause disc that toggles playback inline, and the equalizer/glyph + queue
  * count that opens the full player sheet. The equalizer bounces while playing (a

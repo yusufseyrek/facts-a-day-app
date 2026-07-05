@@ -730,8 +730,20 @@ export function PlayerSheet() {
       </View>
 
       {/* Real content scroll area below the header. The decoy above takes the
-          formSheet's scroll-view hook so this one lays out cleanly. */}
+          formSheet's scroll-view hook so this one lays out cleanly.
+
+          nestedScrollEnabled (Android): the formSheet is a Material
+          BottomSheetBehavior, which only cooperates with an inner scroll view
+          that participates in NESTED scrolling — RN ScrollViews default that
+          off, and without it the sheet treats every downward drag as a
+          sheet-drag and dismisses instead of letting the content scroll back
+          toward the top. Must stay on THIS ScrollView and ONLY this one: the
+          behavior caches the first nested-scroll-enabled descendant (DFS), so
+          enabling it on the horizontal carousel (or a decoy rendered on
+          Android) would cache a view that can never scroll vertically and
+          re-break the sheet. */}
       <ScrollView
+        nestedScrollEnabled
         style={{ flex: 1 }}
         contentContainerStyle={{
           flexGrow: 1,

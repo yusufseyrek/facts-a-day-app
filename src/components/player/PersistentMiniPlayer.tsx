@@ -3,6 +3,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useSegments } from 'expo-router';
 
+import { useIsFocusedScreenPushed } from '../../hooks/useIsFocusedScreenPushed';
 import { useFactOverlay } from '../../services/factMorph';
 import { useSearchHeaderRightEdgeOccupied } from '../../services/searchHeaderState';
 import { useResponsive } from '../../utils/useResponsive';
@@ -11,76 +12,66 @@ import { HeaderQueueButton } from './HeaderQueueButton';
 
 /**
  * The single, persistent queue mini-player. Rendered once above the root
- * navigator (a sibling of the root Stack whose screens are headerShown:false),
- * so ONE instance floats at the top across the tab roots — not a per-screen
- * header button. That means no native header slot (so no empty circle when idle)
- * and no second clone elsewhere.
- *
- * Horizontal side is platform-split: iOS centers the navigation title (with the
- * large title below), so the pill owns the empty top-LEFT corner. Android's
- * Material toolbar LEFT-aligns its title, so a top-left pill would sit on top of
- * the title text — on those tab screens the pill floats top-RIGHT instead. The
- * two Android tab roots that own a native header-right control (the home
- * reading-streak flame, the trivia trophy+rank) reserve extra room so the pill
- * lands to the LEFT of that control rather than over it.
+ * navigator (a sibling of the root Stack), so ONE instance floats at the top
+ * across every screen — never a per-screen header button. That keeps it out of
+ * the native header entirely: no empty slot when idle, no clone per screen,
+ * and on iOS 26 no system Liquid Glass capsule drawn around it (bar items get
+ * one; a floating overlay doesn't).
  *
  * HeaderQueueButton self-hides on an empty queue, so this surfaces only while
- * audio is queued/playing. On top of that it is suppressed wherever a screen
- * owns its own top chrome, so the floating pill never lands on top of it and
- * never has to reposition itself to dodge it:
+ * audio is queued/playing.
+ *
+ * Placement is decided in two structural steps:
+ *
+ * 1) PUSHED screens (anything showing a native back control — detected
+ *    structurally via useIsFocusedScreenPushed, NOT by route-name lists): the
+ *    back chevron owns the top-LEFT, so the pill floats top-RIGHT on both
+ *    platforms. This covers root-stack pushes (/stats, /badges) and
+ *    second-level tab screens (trivia performance/leaderboard/categories/
+ *    history/profile, settings/library) — and any FUTURE pushed screen,
+ *    automatically. History lesson: this used to be a hand-maintained list of
+ *    screen names feeding a suppress-here-and-mount-a-headerRight-there split,
+ *    and every new pushed screen (most recently trivia/profile) shipped with
+ *    the pill overlapping the back chevron, doubled by its headerRight twin.
+ *
+ * 2) TAB ROOTS (no back control): iOS centers the nav title, so the pill owns
+ *    the empty top-LEFT corner — except the search-bearing tabs (search +
+ *    favorites), where the native search field slides up into that corner when
+ *    focused; there it floats top-RIGHT with a state-driven offset
+ *    (searchHeaderState) that tucks it left of whatever occupies the right
+ *    edge (cancel button / category-clear ✕) and hugs the edge otherwise.
+ *    Android's Material toolbar LEFT-aligns its title, so the pill always
+ *    floats top-RIGHT; tab roots that own a native header-right control (home
+ *    streak flame, trivia trophy, the search magnifier) reserve clearance so
+ *    the pill lands beside — not over — that control.
+ *
+ * On top of placement, the pill is suppressed entirely on screens that own
+ * their OWN top chrome, where any corner would collide (an explicit list — a
+ * screen "owning chrome" is a per-screen fact no structure can infer):
  *  - the full player sheet (/player, which IS the player) and onboarding,
  *  - the immersive trivia game (its own exit button + progress bar),
- *  - the story viewer — its own close (X) sits top-right and content overlays
- *    the bottom, so the pill stays out entirely rather than shifting sides when
- *    a story opens; covers both the fullScreenModal route and the in-place morph
- *    variant (segment '[0]' === 'story' for both),
- *  - fact detail (sticky header title slides into the top-left, close button
- *    top-right) — both the card/modal routes AND the in-tab morph overlay, which
- *    keeps the underlying tab's segments so it is detected via useFactOverlay;
- *    fact detail renders its own FactDetailQueueButton (a round control stacked
- *    under the close button) in place of this pill.
- * The queue keeps playing throughout; the pill simply returns on a tab root.
- *
- * The search-bearing tabs (search + favorites) keep the floating pill, but on
- * iOS flip it to the top-RIGHT instead of the usual top-left, with a state-driven
- * offset (searchHeaderState): it tucks left of whatever occupies the right edge
- * (the cancel button while the field is active, or the category-clear ✕) and
- * hugs the edge when that corner is clear. This keeps it beside — never over —
- * the field/controls across every view state (idle, focused, typing, category),
- * and because the floating pill renders above the native search bar it stays
- * visible even while the field is active (when a native headerRight control would
- * be hidden by the system). Android floats the pill top-right with a fixed
- * clearance on the tab roots that own a header-right control (a custom
- * headerRight collides with its toolbar-filling SearchView). See the positioning
- * block below.
+ *  - the story viewer (own close ✕ top-right; modal + morph variants),
+ *  - fact detail (sticky title top-left, close ✕ top-right) — card/modal
+ *    routes AND the in-tab morph overlay (detected via useFactOverlay); it
+ *    renders its own FactDetailQueueButton stacked under the close button,
+ *  - the paywall family (paywall / remove-ads / hint-store), which own a
+ *    top-right close control.
+ * The queue keeps playing throughout; the pill simply returns elsewhere.
+ * NEW SCREENS: a pushed screen needs no wiring — the pill floats top-right by
+ * itself. Only add to the hidden list if the screen draws its own top chrome.
  */
 export function PersistentMiniPlayer() {
   const segments = useSegments();
   const insets = useSafeAreaInsets();
   const { spacing, iconSizes } = useResponsive();
   const factOverlayOpen = useFactOverlay() !== null;
+  const isPushed = useIsFocusedScreenPushed();
   // On iOS search/favorites: does a native control occupy the header's right
   // edge right now (search cancel button / category ✕)? Drives whether the pill
   // tucks left of it or hugs the edge — see the iOS positioning block below.
   const rightEdgeOccupied = useSearchHeaderRightEdgeOccupied();
 
   const root = segments[0];
-  // Pushed (second-level) tab screens carry a back control in the header's
-  // top-LEFT corner — exactly where the iOS pill floats. The floating pill then
-  // sits on top of the back chevron and steals its tap (a "back" press lands on
-  // the pill's open-player zone, double-pushing /player and crashing). On these
-  // screens the queue control moves into the native header-RIGHT instead (see
-  // the trivia + settings layouts), so the floating pill is suppressed here:
-  //  - the offline library (pushed under (settings)),
-  //  - any pushed trivia screen (performance/leaderboard/categories/history);
-  //    the trivia INDEX is a tab root with an empty top-left, so it keeps the
-  //    pill. Scoped to the trivia stack so settings/categories is unaffected.
-  const onPushedTriviaScreen =
-    segments.includes('trivia') &&
-    (segments.includes('performance') ||
-      segments.includes('leaderboard') ||
-      segments.includes('categories') ||
-      segments.includes('history'));
   const hidden =
     root === 'player' ||
     root === 'onboarding' ||
@@ -89,8 +80,7 @@ export function PersistentMiniPlayer() {
     root === 'story' || // story viewer owns its chrome (close X + bottom overlay), both modal + morph
     root === 'paywall' || // paywall owns a top-right close button the Android pill was landing on
     root === 'remove-ads' || // remove-ads paywall sheet (same family; keep the pill off it)
-    segments.includes('library') || // offline library: queue control lives in headerRight
-    onPushedTriviaScreen || // pushed trivia screens: queue control lives in headerRight
+    root === 'hint-store' || // hint-pack sheet (same paywall family)
     factOverlayOpen; // in-tab morph fact overlay (same tab segments, so read the store)
 
   if (hidden) return null;
@@ -100,14 +90,14 @@ export function PersistentMiniPlayer() {
   // Built from responsive tokens so it scales with phone/tablet.
   const headerRightClearance = iconSizes.xl + spacing.xxl * 2;
 
-  // Android floats the pill top-right (the toolbar left-aligns its title). Four
-  // tab roots own a native header-right control: home (the reading-streak flame),
-  // trivia (the leaderboard trophy), favorites and search (the search-bar
-  // magnifier Android docks as a toolbar action on the right). On those reserve
-  // room for it — generously, since over-reserving only nudges the pill a little
-  // further from the edge (still clearly top-right) whereas under-reserving would
-  // overlap the control. Favorites/search only show the magnifier once there is
-  // something to search, but reserving in the empty state too is harmless.
+  // Android tab roots that own a native header-right control: home (the
+  // reading-streak flame), trivia (the leaderboard trophy), favorites and
+  // search (the search-bar magnifier Android docks as a toolbar action on the
+  // right). On those reserve room for it — generously, since over-reserving
+  // only nudges the pill a little further from the edge (still clearly
+  // top-right) whereas under-reserving would overlap the control.
+  // Favorites/search only show the magnifier once there is something to
+  // search, but reserving in the empty state too is harmless.
   const onScreenWithHeaderRightControl =
     segments.includes('(home)') ||
     segments.includes('trivia') ||
@@ -115,22 +105,16 @@ export function PersistentMiniPlayer() {
     segments.includes('(search)');
   const androidRight = spacing.lg + (onScreenWithHeaderRightControl ? headerRightClearance : 0);
 
-  // iOS floats the pill top-LEFT (UIKit centers the title, leaving that corner
-  // free) — EXCEPT on the tabs that own a native header search bar (search and
-  // favorites), where it floats top-RIGHT. The floating pill renders above the
-  // native search bar, so unlike a headerRight control (which the system hides
-  // while the field is active) it stays visible across every view state. Its
-  // exact right offset is state-driven (searchHeaderState): when a control
-  // occupies the right edge — the cancel button while the field is active, or the
-  // category-clear ✕ — the pill tucks ~2x that control's width to its left so it
-  // sits beside, not over, it; otherwise (idle, empty corner) it hugs the edge
-  // instead of floating awkwardly inboard. Without this the field, when focused,
-  // would slide up over the usual top-left spot and the pill would overlap it.
   const onSearchBearingTab =
     segments.includes('(search)') || segments.includes('(favorites)');
   const iosSearchRight = rightEdgeOccupied ? spacing.lg + headerRightClearance : spacing.lg;
-  const horizontal =
-    Platform.OS === 'android'
+
+  // Pushed screens first (both platforms): back chevron top-left, top-right
+  // structurally free (none of these screens has a header-right control — the
+  // ones that own top chrome are in the hidden list above), so hug the edge.
+  const horizontal = isPushed
+    ? { right: spacing.lg }
+    : Platform.OS === 'android'
       ? { right: androidRight }
       : onSearchBearingTab
         ? { right: iosSearchRight }
