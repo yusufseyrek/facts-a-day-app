@@ -33,12 +33,13 @@ describe('AVATAR_CATALOG', () => {
 
   it('ships react-native-svg-renderable art for every token', () => {
     // react-native-svg has no <filter>/<foreignObject>/<image>/<style>
-    // support; a DiceBear style update that introduces one must fail here,
+    // support, and its Android <mask> pass clips masked art to half the
+    // disc; a DiceBear style update that reintroduces one must fail here,
     // not silently render broken discs.
     for (const { token, xml } of AVATAR_CATALOG) {
       expect(xml.startsWith('<svg')).toBe(true);
       expect(avatarXmlFor(token)).toBe(xml);
-      for (const bad of ['<filter', '<foreignObject', '<image', '<style', '<script']) {
+      for (const bad of ['<filter', '<foreignObject', '<image', '<style', '<script', '<mask']) {
         expect(xml).not.toContain(bad);
       }
     }

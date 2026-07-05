@@ -113,11 +113,17 @@ const PEEPS: {
   { name: 'maya', head: 'longCurly', face: 'smileBig', reads: 'f', skin: 3, clothes: 0 },
 ];
 
-/** Strip license metadata + comments and collapse inter-tag whitespace. */
+/** Strip license metadata + comments and collapse inter-tag whitespace.
+ * Also removes DiceBear's viewboxMask wrapper: it's a full-canvas white rect
+ * (a visual no-op — the root svg viewport already clips overflowing art),
+ * but react-native-svg's Android mask pass renders masked content through an
+ * offscreen bitmap that clips the avatars to half. */
 function clean(svg: string): string {
   return svg
     .replace(/<metadata[\s\S]*?<\/metadata>/g, '')
     .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<mask id="viewboxMask">.*?<\/mask>/g, '')
+    .replace(/ mask="url\(#viewboxMask\)"/g, '')
     .replace(/>\s+</g, '><')
     .trim();
 }
@@ -141,7 +147,9 @@ for (const p of PEEPS) {
 }
 
 // --- QA gates ---
-const BAD = ['<filter', '<foreignObject', '<image', '<style', '<script'];
+// <mask> is banned alongside the outright-unsupported features: Android's
+// react-native-svg mask implementation clips masked art to half the disc.
+const BAD = ['<filter', '<foreignObject', '<image', '<style', '<script', '<mask'];
 if (PEEPS.length !== GROUP_SIZE * HUES)
   throw new Error(`catalog must be ${GROUP_SIZE * HUES} avatars (7 even hue groups)`);
 if (new Set(entries.map((e) => e.xml)).size !== entries.length)
