@@ -10,6 +10,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as Updates from 'expo-updates';
 
 import { ContentContainer, ScreenContainer, Text } from '../../../src/components';
+import { AvatarDisc } from '../../../src/components/AvatarDisc';
 import {
   Award,
   Ban,
@@ -34,13 +35,13 @@ import {
   Trophy,
   User,
 } from '../../../src/components/icons';
-import { ScreenNameModal } from '../../../src/components/ScreenNameModal';
 import { ThemePickerModal } from '../../../src/components/settings/ThemePickerModal';
 import { TimePickerModal } from '../../../src/components/settings/TimePickerModal';
 import { SettingsRow } from '../../../src/components/SettingsRow';
 import { XStack, YStack } from '../../../src/components/Stacks';
 import { FONT_FAMILIES } from '../../../src/components/Typography';
 import { DEV_SETTINGS_ENABLED, LAYOUT, SUBSCRIPTION } from '../../../src/config/app';
+import { identityColor } from '../../../src/config/avatars';
 import { useOnboarding, usePremium, useScrollToTopHandler } from '../../../src/contexts';
 import { useAudioSettings } from '../../../src/hooks/useAudioSettings';
 import { useTranslation } from '../../../src/i18n';
@@ -203,7 +204,6 @@ export default function SettingsPage() {
   // Modal visibility state
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [showTimeModal, setShowTimeModal] = useState(false);
-  const [showScreenNameModal, setShowScreenNameModal] = useState(false);
 
   // Claimed screen name + avatar (null until the user picks one)
   const [screenName, setScreenName] = useState<string | null>(null);
@@ -789,13 +789,26 @@ export default function SettingsPage() {
       title: t('settingsUserPreferences'),
       data: [
         {
-          id: 'screenName',
-          label: t('screenName'),
-          // The chosen avatar rides along so the row previews the identity.
-          value: screenName ? `${avatar ? `${avatar} ` : ''}${screenName}` : t('screenNameNotSet'),
-          icon: <User size={iconSizes.md} color={colors.neonPurple} />,
+          id: 'profile',
+          label: t('profile'),
+          value: screenName ?? t('screenNameNotSet'),
+          // The identity disc previews the claimed avatar in its signature
+          // color (v2 avatars are art tokens — prefixing them into the value
+          // string would render "peep-otis" as text).
+          icon: screenName ? (
+            <AvatarDisc
+              name={screenName}
+              avatar={avatar}
+              color={identityColor(screenName, avatar, colors)}
+              size={iconSizes.md}
+            />
+          ) : (
+            <User size={iconSizes.md} color={colors.neonPurple} />
+          ),
           accent: colors.neonPurple,
-          onPress: () => setShowScreenNameModal(true),
+          // Own profile screen; it hosts the claim/rename dialog (behind a
+          // proper button) instead of the dialog popping over this list.
+          onPress: () => router.push('/(tabs)/(settings)/profile'),
         },
         {
           id: 'language',
@@ -1248,15 +1261,6 @@ export default function SettingsPage() {
 
       {/* Modals */}
       <ThemePickerModal visible={showThemeModal} onClose={() => setShowThemeModal(false)} />
-
-      <ScreenNameModal
-        visible={showScreenNameModal}
-        onClose={() => setShowScreenNameModal(false)}
-        onSaved={(name) => setScreenName(name)}
-        currentName={screenName}
-        currentAvatar={avatar}
-        source="settings"
-      />
 
       <TimePickerModal
         visible={showTimeModal}

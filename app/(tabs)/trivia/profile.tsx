@@ -18,16 +18,27 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
-import { ContentContainer } from '../../../src/components';
+import { Button, ContentContainer } from '../../../src/components';
 import { AvatarDisc } from '../../../src/components/AvatarDisc';
 import { BadgeDetailSheet } from '../../../src/components/badges/BadgeDetailSheet';
 import { BadgeIcon } from '../../../src/components/badges/BadgeIcon';
 import { StarRating } from '../../../src/components/badges/StarRating';
 import { GlassSurface } from '../../../src/components/GlassSurface';
-import { Award, Check, Flame, Trophy, Zap } from '../../../src/components/icons';
+import {
+  Award,
+  Check,
+  Flame,
+  Pencil,
+  Trophy,
+  User,
+  WifiOff,
+  Zap,
+} from '../../../src/components/icons';
+import { ScreenNameModal } from '../../../src/components/ScreenNameModal';
 import { ShimmerPlaceholder } from '../../../src/components/ShimmerPlaceholder';
 import { XStack, YStack } from '../../../src/components/Stacks';
 import { FONT_FAMILIES, Text } from '../../../src/components/Typography';
+import { LAYOUT } from '../../../src/config/app';
 import { BADGE_DEFINITIONS, STAR_COLORS } from '../../../src/config/badges';
 import { useTranslation } from '../../../src/i18n';
 import { Screens, trackBadgeDetailView, trackScreenView } from '../../../src/services/analytics';
@@ -781,10 +792,23 @@ export default function TriviaProfileScreen() {
   const bannerInset = useTabBarBannerInset();
   const colors = hexColors[theme];
 
-  const screenName = (params.name ?? '').trim();
+  // Route param when viewing another player. Absent = own-profile mode (the
+  // settings entry): the name resolves from the local identity at load time.
+  const paramName = (params.name ?? '').trim();
 
   const [profile, setProfile] = useState<TriviaProfileResponse | null>(null);
   const [notFound, setNotFound] = useState(false);
+  // Own-profile mode with no claimed identity: show the profile-setup state
+  // instead of a player-lookup failure. False as soon as an identity exists.
+  const [needsClaim, setNeedsClaim] = useState(false);
+  // Non-404 load failure (network/server), rendered as a retry state — the
+  // not-found copy ("no player with that name") would read as "your account
+  // is gone" when the own-profile entry merely lost connectivity.
+  const [loadFailed, setLoadFailed] = useState(false);
+  // Resolved identity name in own-profile mode; only feeds the accent while
+  // the fetch is in flight (the loaded hero derives from the response).
+  const [ownName, setOwnName] = useState<string | null>(null);
+  const [nameModalVisible, setNameModalVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   // What the loading window shows: 'blank' → (only if slow) 'skeleton' →
   // 'content'. Never regresses; 'content' is only reachable once loading is
@@ -805,26 +829,54 @@ export default function TriviaProfileScreen() {
     trackScreenView(Screens.TRIVIA_PROFILE);
   }, []);
 
+  // Latest-wins guard: identity changes and locale refetches can overlap, and
+  // a stale response committing last would show the previous name and flip
+  // isSelf false. Only the newest load() invocation may write state.
+  const loadSeqRef = useRef(0);
+  // isSelf, readable from the identity-change listener without resubscribing.
+  const isSelfRef = useRef(false);
+  // A rename while this screen shows the renamed identity leaves a
+  // param-routed name stale (the leaderboard pushes ?name=<you> for your own
+  // row) — refetching the old name would 404 into "no player with that name".
+  // The listener binds the screen to the identity's new name instead.
+  const selfNameOverrideRef = useRef<string | null>(null);
+
   const load = useCallback(async () => {
-    if (!screenName) {
-      setNotFound(true);
-      setLoading(false);
-      return;
+    const seq = ++loadSeqRef.current;
+    const fresh = () => seq === loadSeqRef.current;
+
+    const identity = await userService.getProfile().catch(() => null);
+    if (!fresh()) return;
+
+    let target = selfNameOverrideRef.current ?? paramName;
+    if (!target) {
+      if (!identity) {
+        setNeedsClaim(true);
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
+      target = identity.screenName;
+    }
+    if (identity) {
+      setOwnName(identity.screenName);
+      setNeedsClaim(false);
     }
     setLoading(true);
     setNotFound(false);
+    setLoadFailed(false);
     try {
-      const [data, identity] = await Promise.all([
-        api.getTriviaProfile(screenName),
-        userService.getProfile().catch(() => null),
-      ]);
+      const data = await api.getTriviaProfile(target);
+      if (!fresh()) return;
       setProfile(data);
       const self =
         !!identity && identity.screenName.toLowerCase() === data.screen_name.toLowerCase();
       setIsSelf(self);
+      isSelfRef.current = self;
 
       if (self) {
         const all = await getAllBadgesWithStatus().catch(() => [] as BadgeWithStatus[]);
+        if (!fresh()) return;
         setOwnBadges(new Map(all.map((b) => [b.definition.id, b])));
       } else {
         setOwnBadges(null);
@@ -833,6 +885,7 @@ export default function TriviaProfileScreen() {
       // Localized names/icons for the top-category slugs (cached metadata).
       if (data.top_categories.length > 0) {
         const metadata = await api.getMetadata(locale).catch(() => null);
+        if (!fresh()) return;
         if (metadata) {
           setCategoryMeta(
             new Map(
@@ -845,20 +898,40 @@ export default function TriviaProfileScreen() {
         }
       }
     } catch (error) {
+      if (!fresh()) return;
       if ((error as { status?: number })?.status === 404) {
         setNotFound(true);
       } else {
         console.error('Error loading trivia profile:', error);
-        setNotFound(true);
+        setLoadFailed(true);
       }
     } finally {
-      setLoading(false);
+      if (fresh()) setLoading(false);
     }
-  }, [screenName, locale]);
+  }, [paramName, locale]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  // Refetch whenever the identity changes — the claim/rename dialog on THIS
+  // screen (saveIdentity emits before the dialog's onSaved fires) and edits
+  // made on any other screen while this one sits in the stack. This is the
+  // needsClaim → loaded transition and the rename/avatar refresh in one hook.
+  useEffect(
+    () =>
+      userService.onIdentityChange((identity) => {
+        if (!identity) {
+          // Account deleted: drop any rename binding so own-profile mode
+          // falls back to the setup state, not a 404 on the dead name.
+          selfNameOverrideRef.current = null;
+        } else if (isSelfRef.current) {
+          selfNameOverrideRef.current = identity.screenName;
+        }
+        load();
+      }),
+    [load]
+  );
 
   // Drives the reveal phase (see SKELETON_DELAY_MS). Branching on phase, not
   // loading, is what prevents the flash frames: a fast load goes blank →
@@ -896,7 +969,7 @@ export default function TriviaProfileScreen() {
 
   // The whole card family derives from ONE accent: gradient end, glow, text
   // contrast and plate alphas — the trivia tile signature.
-  const accent = avatarColor(profile?.screen_name || screenName || '?', colors);
+  const accent = avatarColor(profile?.screen_name || paramName || ownName || '?', colors);
   const contrastColor = getContrastColor(accent);
   const onDark = contrastColor === '#FFFFFF';
   const plateBg = onDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.12)';
@@ -976,6 +1049,110 @@ export default function TriviaProfileScreen() {
             </ScrollView>
           </Animated.View>
         )}
+      </View>
+    );
+  }
+
+  // Own profile before any name is claimed: a proper setup state with the
+  // picker behind an explicit button (the settings row used to pop the dialog
+  // straight over the list). After a claim, needsClaim drops with the reload
+  // and the in-flight branch below covers the first fetch with the skeleton.
+  if (needsClaim) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+        <YStack
+          flex={1}
+          justifyContent="center"
+          alignItems="center"
+          padding={spacing.xl}
+          gap={spacing.lg}
+        >
+          <YStack
+            width={iconSizes.hero}
+            height={iconSizes.hero}
+            borderRadius={iconSizes.hero / 2}
+            backgroundColor={`${colors.primary}15`}
+            justifyContent="center"
+            alignItems="center"
+          >
+            <User size={iconSizes.lg} color={colors.primary} />
+          </YStack>
+          <YStack alignItems="center" gap={spacing.sm} maxWidth={LAYOUT.MAX_CONTENT_WIDTH}>
+            <Text.Headline textAlign="center">{t('profileSetupTitle')}</Text.Headline>
+            <Text.Body textAlign="center" color="$textSecondary">
+              {t('profileSetupDescription')}
+            </Text.Body>
+          </YStack>
+          <YStack width="100%" maxWidth={280} marginTop={spacing.sm}>
+            <Button onPress={() => setNameModalVisible(true)}>{t('screenNameTitle')}</Button>
+          </YStack>
+        </YStack>
+        {/* The identity-change subscription reloads after a save; the dialog
+            closes itself, so onSaved has nothing left to do. */}
+        <ScreenNameModal
+          visible={nameModalVisible}
+          onClose={() => setNameModalVisible(false)}
+          onSaved={() => {}}
+          currentName={null}
+          source="settings"
+        />
+      </View>
+    );
+  }
+
+  // In-flight with nothing settled to show (the first fetch right after a
+  // claim): phase reached 'content' long ago, so the phase machinery can't
+  // cover this window — show the skeleton instead of flashing not-found.
+  if (!profile && loading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          overScrollMode="never"
+          contentInsetAdjustmentBehavior="automatic"
+          contentContainerStyle={{ paddingBottom: bannerInset + spacing.xl }}
+        >
+          <ContentContainer>
+            <ProfileSkeleton accent={accent} isDark={isDark} />
+          </ContentContainer>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  // Network/server failure with no settled content: retry, not "no player".
+  if (loadFailed && !profile) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+        <YStack
+          flex={1}
+          justifyContent="center"
+          alignItems="center"
+          padding={spacing.xl}
+          gap={spacing.lg}
+        >
+          <YStack
+            width={iconSizes.hero}
+            height={iconSizes.hero}
+            borderRadius={iconSizes.hero / 2}
+            backgroundColor={`${colors.primary}15`}
+            justifyContent="center"
+            alignItems="center"
+          >
+            <WifiOff size={iconSizes.lg} color={colors.primary} />
+          </YStack>
+          <YStack alignItems="center" gap={spacing.sm} maxWidth={LAYOUT.MAX_CONTENT_WIDTH}>
+            <Text.Body textAlign="center" color="$textSecondary">
+              {t('profileLoadFailed')}
+            </Text.Body>
+          </YStack>
+          <YStack width="100%" maxWidth={280}>
+            <Button onPress={() => load()}>{t('tryAgain')}</Button>
+          </YStack>
+        </YStack>
       </View>
     );
   }
@@ -1109,6 +1286,28 @@ export default function TriviaProfileScreen() {
                           {t('memberSince', { date: memberSinceDate })}
                         </Text.Caption>
                       </YStack>
+                      {/* Own profile: edit affordance in the hero's plate
+                          tone, opening the claim/rename dialog prefilled. */}
+                      {isSelf && (
+                        <Pressable
+                          onPress={() => setNameModalVisible(true)}
+                          accessibilityRole="button"
+                          accessibilityLabel={t('screenNameChangeTitle')}
+                          hitSlop={spacing.xs}
+                          style={({ pressed }) => ({
+                            width: iconSizes.xl,
+                            height: iconSizes.xl,
+                            borderRadius: iconSizes.xl / 2,
+                            backgroundColor: plateBg,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            opacity: pressed ? 0.7 : 1,
+                            transform: [{ scale: pressed ? 0.92 : 1 }],
+                          })}
+                        >
+                          <Pencil size={iconSizes.xs} color={contrastColor} />
+                        </Pressable>
+                      )}
                     </XStack>
 
                     {/* Structural hairline between identity and the dial row */}
@@ -1466,6 +1665,20 @@ export default function TriviaProfileScreen() {
         visible={badgeSheetVisible}
         onClose={() => setBadgeSheetVisible(false)}
       />
+
+      {/* Rename/avatar edit for the hero's pencil. The identity-change
+          subscription reloads after a save; the dialog closes itself, so
+          onSaved has nothing left to do. */}
+      {isSelf && (
+        <ScreenNameModal
+          visible={nameModalVisible}
+          onClose={() => setNameModalVisible(false)}
+          onSaved={() => {}}
+          currentName={profile.screen_name}
+          currentAvatar={profile.avatar}
+          source="settings"
+        />
+      )}
     </View>
   );
 }

@@ -14,6 +14,9 @@ export default function SettingsStackLayout() {
     <Stack screenOptions={headerOptions}>
       <Stack.Screen name="settings" options={{ title: t('settings') }} />
       <Stack.Screen name="library" options={{ title: t('offlineLibrary') }} />
+      {/* Generic title on purpose (matches the trivia stack's profile): the
+          hero card owns the player's name. */}
+      <Stack.Screen name="profile" options={{ title: t('profile') }} />
     </Stack>
   );
 }
