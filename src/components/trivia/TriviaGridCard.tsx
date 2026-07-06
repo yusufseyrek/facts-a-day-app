@@ -6,16 +6,11 @@ import { hexColors } from '../../theme';
 import { darkenColor, getContrastColor } from '../../utils/colors';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { useResponsive } from '../../utils/useResponsive';
-import { Check, CheckCircle, ChevronRight, Grid, Shuffle, Zap } from '../icons';
+import { Check, ChevronRight, Shuffle, Zap } from '../icons';
 import { XStack, YStack } from '../Stacks';
 import { FONT_FAMILIES, Text } from '../Typography';
 
-export type TriviaGridCardType =
-  | 'daily'
-  | 'mixed'
-  | 'category'
-  | 'true_false'
-  | 'multiple_choice';
+export type TriviaGridCardType = 'daily' | 'mixed' | 'category';
 
 interface TriviaGridCardProps {
   type: TriviaGridCardType;
@@ -51,17 +46,13 @@ export function TriviaGridCard({
   const primaryColor = isDark ? hexColors.dark.primary : hexColors.light.primary;
   const successColor = isDark ? hexColors.dark.success : hexColors.light.success;
   const purpleColor = isDark ? hexColors.dark.neonPurple : hexColors.light.neonPurple;
-  const greenColor = isDark ? hexColors.dark.neonGreen : hexColors.light.neonGreen;
-  const orangeColor = isDark ? hexColors.dark.neonOrange : hexColors.light.neonOrange;
 
   // Determine the accent color based on type. Each flagship mode owns a hue:
-  // daily=primary, mixed=purple, T/F=green, MC=orange.
+  // daily=primary, mixed=purple.
   const getAccentColor = () => {
     if (isCompleted) return successColor;
     if (type === 'daily') return primaryColor;
     if (type === 'mixed') return purpleColor;
-    if (type === 'true_false') return greenColor;
-    if (type === 'multiple_choice') return orangeColor;
     return colorHex || primaryColor;
   };
 
@@ -85,14 +76,6 @@ export function TriviaGridCard({
       return <Shuffle size={iconSizes.lg} color={contrastColor} strokeWidth={2} />;
     }
 
-    if (type === 'true_false') {
-      return <CheckCircle size={iconSizes.lg} color={contrastColor} strokeWidth={2} />;
-    }
-
-    if (type === 'multiple_choice') {
-      return <Grid size={iconSizes.lg} color={contrastColor} strokeWidth={2} />;
-    }
-
     // Category type - use the icon from props
     return getLucideIcon(icon, iconSizes.lg, contrastColor);
   };
@@ -101,8 +84,6 @@ export function TriviaGridCard({
   const getTestId = () => {
     if (type === 'daily') return 'trivia-card-daily';
     if (type === 'mixed') return 'trivia-card-mixed';
-    if (type === 'true_false') return 'trivia-card-true-false';
-    if (type === 'multiple_choice') return 'trivia-card-multiple-choice';
     return `trivia-card-category-${icon || 'unknown'}`;
   };
 

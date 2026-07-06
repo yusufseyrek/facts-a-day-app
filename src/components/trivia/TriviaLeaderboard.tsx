@@ -63,48 +63,15 @@ function formatScore(n: number): string {
   return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
-/** Spoken score for accessibility labels: "56 / 111", or just "56" when the
- * total is unavailable (pre-total_questions backend). */
-function scoreA11y(correct: number, total: number): string {
-  return Number.isFinite(total) && total > 0
-    ? `${formatScore(correct)} / ${formatScore(total)}`
-    : formatScore(correct);
-}
-
-/** Score as "correct / total": correct answers (also the rank metric) emphasized,
- * the answered-question total shown muted as the denominator so the number can't
- * be misread (e.g. "56" alone vs "56 / 111"). */
-function ScoreFraction({
-  correct,
-  total,
-  numeratorColor,
-  denomColor,
-  denomOpacity,
-  big,
-}: {
-  correct: number;
-  total: number;
-  numeratorColor: string;
-  denomColor: string;
-  denomOpacity?: number;
-  big?: boolean;
-}) {
-  const Numerator = big ? Text.Title : Text.Label;
-  // Degrade to the bare score if a backend without total_questions is in play
-  // (e.g. an app build pointed at a not-yet-deployed server) so we never show
-  // "56 / undefined".
-  const showDenom = Number.isFinite(total) && total > 0;
+/** The player's score — correct answers, which is also the ranking metric.
+ * Rendered as a single bold number; the accuracy breakdown (answered vs correct)
+ * lives on the player's profile, one tap away, so the board stays scannable. */
+function ScoreValue({ score, color, big }: { score: number; color: string; big?: boolean }) {
+  const ScoreText = big ? Text.Title : Text.Label;
   return (
-    <XStack alignItems="baseline">
-      <Numerator color={numeratorColor} fontFamily={FONT_FAMILIES.bold} maxFontSizeMultiplier={1.2}>
-        {formatScore(correct)}
-      </Numerator>
-      {showDenom ? (
-        <Text.Caption color={denomColor} opacity={denomOpacity} maxFontSizeMultiplier={1.2}>
-          {` / ${formatScore(total)}`}
-        </Text.Caption>
-      ) : null}
-    </XStack>
+    <ScoreText color={color} fontFamily={FONT_FAMILIES.bold} maxFontSizeMultiplier={1.2}>
+      {formatScore(score)}
+    </ScoreText>
   );
 }
 
@@ -154,7 +121,7 @@ function PodiumColumn({
         gap={spacing.sm}
         justifyContent="flex-end"
         accessible
-        accessibilityLabel={`#${entry.rank} ${entry.screen_name} ${scoreA11y(entry.score, entry.total_questions)}${
+        accessibilityLabel={`#${entry.rank} ${entry.screen_name} ${formatScore(entry.score)}${
           isViewer ? ` (${youLabel})` : ''
         }`}
       >
@@ -176,14 +143,7 @@ function PodiumColumn({
           >
             {`${flag ? `${flag} ` : ''}${entry.screen_name}`}
           </Text.Caption>
-          <ScoreFraction
-            correct={entry.score}
-            total={entry.total_questions}
-            numeratorColor={contrastColor}
-            denomColor={contrastColor}
-            denomOpacity={0.7}
-            big
-          />
+          <ScoreValue score={entry.score} color={contrastColor} big />
           {isViewer && (
             <Text.Tiny
               color={contrastColor}
@@ -224,7 +184,7 @@ function PodiumColumn({
  * first load and when switching windows so the structure stays put and only
  * the content swaps, instead of collapsing to a centered spinner.
  */
-function LeaderboardSkeleton() {
+function LeaderboardSkeleton({ pressable }: { pressable: boolean }) {
   const { theme } = useTheme();
   const { spacing, radius, borderWidths, media, typography, iconSizes } = useResponsive();
   const colors = hexColors[theme];
@@ -370,12 +330,11 @@ function LeaderboardSkeleton() {
               />
               <ShimmerPlaceholder width="40%" height={lineHeight.label} />
               <View style={{ flex: 1 }} />
-              {/* Score fraction over the games count — the real row's tallest
-                  column, so it, not the name, sets the row height. */}
-              <YStack alignItems="flex-end">
-                <ShimmerPlaceholder width={44} height={lineHeight.label} />
-                <ShimmerPlaceholder width={30} height={lineHeight.caption} />
-              </YStack>
+              {/* Score — the row's trailing column. */}
+              <ShimmerPlaceholder width={44} height={lineHeight.label} />
+              {/* Trailing chevron is chrome, not data — render it real (muted) so
+                  the row edge matches the loaded pressable rows during load. */}
+              {pressable ? <ChevronRight size={iconSizes.sm} color={colors.textMuted} /> : null}
             </XStack>
           </React.Fragment>
         ))}
@@ -583,7 +542,7 @@ function TriviaLeaderboardComponent({
           </Pressable>
         </YStack>
       ) : loadedWindow !== window ? (
-        <LeaderboardSkeleton />
+        <LeaderboardSkeleton pressable={!!onPlayerPress} />
       ) : entries.length === 0 ? (
         <YStack alignItems="center" gap={spacing.md} paddingVertical={spacing.xxxl * 2}>
           <Trophy size={iconSizes.hero} color={colors.textMuted} opacity={0.5} />
@@ -699,9 +658,8 @@ function TriviaLeaderboardComponent({
                         paddingHorizontal={spacing.md}
                         backgroundColor={isMe ? hexToRgba(accent, 0.1) : 'transparent'}
                         accessible
-                        accessibilityLabel={`#${entry.rank} ${entry.screen_name} ${scoreA11y(
-                          entry.score,
-                          entry.total_questions
+                        accessibilityLabel={`#${entry.rank} ${entry.screen_name} ${formatScore(
+                          entry.score
                         )}${isMe ? ` (${t('leaderboardYou')})` : ''}`}
                       >
                         <View style={{ width: iconSizes.lg, alignItems: 'center' }}>
@@ -733,20 +691,12 @@ function TriviaLeaderboardComponent({
                             ? `${entry.screen_name} · ${t('leaderboardYou')}`
                             : entry.screen_name}
                         </Text.Label>
-                        <YStack alignItems="flex-end">
-                          <ScoreFraction
-                            correct={entry.score}
-                            total={entry.total_questions}
-                            numeratorColor={accent}
-                            denomColor={colors.textMuted}
-                          />
-                          <Text.Caption
-                            color={colors.textMuted}
-                            fontSize={typography.fontSize.tiny}
-                          >
-                            {t('leaderboardGamesCount', { count: String(entry.games) })}
-                          </Text.Caption>
-                        </YStack>
+                        <ScoreValue score={entry.score} color={accent} />
+                        {/* Tap affordance — only when the row actually navigates
+                            to a profile. Podium (top 3) omits it by design. */}
+                        {onPlayerPress ? (
+                          <ChevronRight size={iconSizes.sm} color={colors.textMuted} />
+                        ) : null}
                       </XStack>
                     </Pressable>
                   </React.Fragment>
@@ -791,22 +741,10 @@ function TriviaLeaderboardComponent({
                   >
                     {`${t('leaderboardYou')} · #${me.rank}`}
                   </Text.Label>
-                  <YStack alignItems="flex-end">
-                    <ScoreFraction
-                      correct={me.score}
-                      total={me.total_questions}
-                      numeratorColor={contrastColor}
-                      denomColor={contrastColor}
-                      denomOpacity={0.7}
-                    />
-                    <Text.Caption
-                      color={contrastColor}
-                      opacity={0.8}
-                      fontSize={typography.fontSize.tiny}
-                    >
-                      {t('leaderboardGamesCount', { count: String(me.games) })}
-                    </Text.Caption>
-                  </YStack>
+                  <ScoreValue score={me.score} color={contrastColor} />
+                  {onPlayerPress && screenName ? (
+                    <ChevronRight size={iconSizes.sm} color={contrastColor} opacity={0.8} />
+                  ) : null}
                 </XStack>
               </LinearGradient>
             </Pressable>

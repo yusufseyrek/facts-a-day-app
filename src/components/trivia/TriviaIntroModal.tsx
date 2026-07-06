@@ -1,8 +1,10 @@
+import { useEffect, useState } from 'react';
 import { Pressable } from 'react-native';
 
 import { useTranslation } from '../../i18n';
-import { getEstimatedTimeMinutes } from '../../services/trivia';
+import { getEstimatedTimeMinutes, MIXED_TRIVIA_QUESTIONS } from '../../services/trivia';
 import { hexColors, useTheme } from '../../theme';
+import { getContrastColor } from '../../utils/colors';
 import { getLucideIcon } from '../../utils/iconMapper';
 import { useResponsive } from '../../utils/useResponsive';
 import { DialogShell } from '../DialogShell';
@@ -10,11 +12,18 @@ import { CheckCircle, Clock, Grid, ListChecks, Play, Shuffle, Trophy, Zap } from
 import { XStack, YStack } from '../Stacks';
 import { FONT_FAMILIES, Text } from '../Typography';
 
-export type TriviaType = 'daily' | 'mixed' | 'category' | 'true_false' | 'multiple_choice';
+import type { TriviaQuestionFormat } from '../../services/api';
+
+export type TriviaType = 'daily' | 'mixed' | 'category';
+
+/** The mixed modal's question-type selector: both formats or a single one. */
+type FormatSelection = 'all' | TriviaQuestionFormat;
 
 interface TriviaIntroModalProps {
   visible: boolean;
-  onStart: () => void;
+  /** `format` is set when the user narrowed a mixed session to one question
+      type via the in-modal selector; undefined = play the full mixed batch. */
+  onStart: (format?: TriviaQuestionFormat) => void;
   onClose: () => void;
   type: TriviaType;
   categoryName?: string;
@@ -22,6 +31,10 @@ interface TriviaIntroModalProps {
   categoryIcon?: string;
   categoryColor?: string;
   questionCount: number;
+  /** Per-format slices of the mixed pool (mixed type only) — gate and size the
+      question-type selector. */
+  trueFalseCount?: number;
+  multipleChoiceCount?: number;
   masteredCount?: number;
   totalQuestions?: number;
   answeredCount?: number;
@@ -38,6 +51,8 @@ export function TriviaIntroModal({
   categoryIcon,
   categoryColor,
   questionCount,
+  trueFalseCount = 0,
+  multipleChoiceCount = 0,
   masteredCount: _masteredCount = 0,
   totalQuestions = 0,
   answeredCount = 0,
@@ -61,12 +76,34 @@ export function TriviaIntroModal({
   const orangeColor = isDark ? hexColors.dark.neonOrange : hexColors.light.neonOrange;
   const borderColor = isDark ? hexColors.dark.border : hexColors.light.border;
 
-  // Determine accent color based on type (same hue map as TriviaGridCard).
+  // Question-type selection (mixed only). Reset on every open: a fresh modal
+  // always offers the full batch, never a leftover narrowing.
+  const [format, setFormat] = useState<FormatSelection>('all');
+  useEffect(() => {
+    if (visible) setFormat('all');
+  }, [visible]);
+
+  const selectedFormat: TriviaQuestionFormat | undefined =
+    type === 'mixed' && format !== 'all' ? format : undefined;
+
+  // Narrowing to one format swaps in that format's slice of the pool.
+  const displayQuestionCount =
+    selectedFormat === 'true_false'
+      ? Math.min(trueFalseCount, MIXED_TRIVIA_QUESTIONS)
+      : selectedFormat === 'multiple_choice'
+        ? Math.min(multipleChoiceCount, MIXED_TRIVIA_QUESTIONS)
+        : questionCount;
+
+  // Determine accent color based on type; for mixed the accent follows the
+  // format selection (same hue map as the old dedicated grid cards:
+  // mixed=purple, T/F=green, MC=orange).
   const getAccentColor = () => {
     if (type === 'daily') return primaryColor;
-    if (type === 'mixed') return purpleColor;
-    if (type === 'true_false') return greenColor;
-    if (type === 'multiple_choice') return orangeColor;
+    if (type === 'mixed') {
+      if (selectedFormat === 'true_false') return greenColor;
+      if (selectedFormat === 'multiple_choice') return orangeColor;
+      return purpleColor;
+    }
     return categoryColor || primaryColor;
   };
   const accentColor = getAccentColor();
@@ -77,13 +114,13 @@ export function TriviaIntroModal({
       return <Zap size={iconSizes.lg} color="#FFFFFF" strokeWidth={2} />;
     }
     if (type === 'mixed') {
+      if (selectedFormat === 'true_false') {
+        return <CheckCircle size={iconSizes.lg} color="#FFFFFF" strokeWidth={2} />;
+      }
+      if (selectedFormat === 'multiple_choice') {
+        return <Grid size={iconSizes.lg} color="#FFFFFF" strokeWidth={2} />;
+      }
       return <Shuffle size={iconSizes.lg} color="#FFFFFF" strokeWidth={2} />;
-    }
-    if (type === 'true_false') {
-      return <CheckCircle size={iconSizes.lg} color="#FFFFFF" strokeWidth={2} />;
-    }
-    if (type === 'multiple_choice') {
-      return <Grid size={iconSizes.lg} color="#FFFFFF" strokeWidth={2} />;
     }
     return getLucideIcon(categoryIcon, iconSizes.lg, '#FFFFFF');
   };
@@ -91,23 +128,45 @@ export function TriviaIntroModal({
   // Get title
   const getTitle = () => {
     if (type === 'daily') return t('dailyTrivia');
-    if (type === 'mixed') return t('mixedTrivia');
-    if (type === 'true_false') return t('trueFalseTrivia');
-    if (type === 'multiple_choice') return t('multipleChoiceTrivia');
+    if (type === 'mixed') {
+      if (selectedFormat === 'true_false') return t('trueFalseTrivia');
+      if (selectedFormat === 'multiple_choice') return t('multipleChoiceTrivia');
+      return t('mixedTrivia');
+    }
     return `${categoryName} ${t('trivia')}`;
   };
 
   // Get description
   const getDescription = () => {
     if (type === 'daily') return t('dailyTriviaDesc');
-    if (type === 'mixed') return t('mixedTriviaDesc');
-    if (type === 'true_false') return t('trueFalseTriviaDesc');
-    if (type === 'multiple_choice') return t('multipleChoiceTriviaDesc');
+    if (type === 'mixed') {
+      if (selectedFormat === 'true_false') return t('trueFalseTriviaDesc');
+      if (selectedFormat === 'multiple_choice') return t('multipleChoiceTriviaDesc');
+      return t('mixedTriviaDesc');
+    }
     return categoryDescription || '';
   };
 
   // Personal accuracy across previously answered questions in this scope.
   const accuracyPct = answeredCount > 0 ? Math.round((correctCount / answeredCount) * 100) : 0;
+
+  // Selector chips: each format keeps the hue it owned as a grid card. A
+  // format with no unanswered questions left is offered but inert.
+  const formatOptions = [
+    { key: 'all', label: t('triviaFormatAll'), color: purpleColor, enabled: true },
+    {
+      key: 'true_false',
+      label: t('trueFalseTrivia'),
+      color: greenColor,
+      enabled: trueFalseCount > 0,
+    },
+    {
+      key: 'multiple_choice',
+      label: t('multipleChoiceTrivia'),
+      color: orangeColor,
+      enabled: multipleChoiceCount > 0,
+    },
+  ] as const;
 
   return (
     <DialogShell
@@ -144,11 +203,19 @@ export function TriviaIntroModal({
           </Text.Title>
         </XStack>
 
-        {/* Description */}
+        {/* Description. Mixed swaps this text with the format selection, and
+            the longest localized variants wrap to a second line on narrow
+            phones — reserving two caption lines keeps the dialog height
+            steady across chip taps. */}
         {getDescription() && (
-          <Text.Caption color={secondaryTextColor} textAlign="center">
-            {getDescription()}
-          </Text.Caption>
+          <YStack
+            minHeight={type === 'mixed' ? typography.lineHeight.caption * 2 : undefined}
+            justifyContent="center"
+          >
+            <Text.Caption color={secondaryTextColor} textAlign="center">
+              {getDescription()}
+            </Text.Caption>
+          </YStack>
         )}
       </YStack>
 
@@ -178,7 +245,7 @@ export function TriviaIntroModal({
             >
               <ListChecks size={typography.fontSize.title} color="#FFFFFF" strokeWidth={2.5} />
             </YStack>
-            <Text.Headline color={textColor}>{questionCount}</Text.Headline>
+            <Text.Headline color={textColor}>{displayQuestionCount}</Text.Headline>
           </XStack>
           <Text.Caption
             color={secondaryTextColor}
@@ -211,7 +278,7 @@ export function TriviaIntroModal({
               <Clock size={typography.fontSize.title} color="#FFFFFF" strokeWidth={2.5} />
             </YStack>
             <Text.Headline color={textColor}>
-              ~{getEstimatedTimeMinutes(questionCount)}
+              ~{getEstimatedTimeMinutes(displayQuestionCount, selectedFormat)}
             </Text.Headline>
           </XStack>
           <Text.Caption
@@ -228,11 +295,7 @@ export function TriviaIntroModal({
       <YStack paddingHorizontal={spacing.lg} gap={spacing.xs} marginBottom={spacing.md}>
         {/* Personal accuracy (replaces the answered/mastered progress
             card — accuracy is the number players actually chase) */}
-        {(type === 'category' ||
-          type === 'mixed' ||
-          type === 'true_false' ||
-          type === 'multiple_choice') &&
-          answeredCount > 0 && (
+        {(type === 'category' || type === 'mixed') && answeredCount > 0 && (
           <XStack
             backgroundColor={surfaceColor}
             borderRadius={radius.md}
@@ -254,28 +317,91 @@ export function TriviaIntroModal({
           </XStack>
         )}
 
-        {/* Question Types */}
-        <XStack
-          backgroundColor={surfaceColor}
-          borderRadius={radius.md}
-          padding={spacing.md}
-          alignItems="center"
-          gap={spacing.sm}
-        >
-          <CheckCircle size={typography.fontSize.title} color={isDark ? '#FBBF24' : '#F59E0B'} />
-          <YStack flex={1}>
+        {/* Question Types: an interactive format selector for mixed (both
+            formats / T/F-only / MC-only — the old dedicated cards folded into
+            this dialog), a static note elsewhere (daily and category pools
+            aren't format-filterable). */}
+        {type === 'mixed' ? (
+          <YStack
+            backgroundColor={surfaceColor}
+            borderRadius={radius.md}
+            padding={spacing.md}
+            gap={spacing.sm}
+          >
             <Text.Caption fontFamily={FONT_FAMILIES.medium} color={textColor}>
               {t('triviaQuestionType')}
             </Text.Caption>
-            <Text.Tiny color={secondaryTextColor}>{t('triviaQuestionTypeDesc')}</Text.Tiny>
+            {/* Chips size from their label, NOT equal thirds — squeezed into
+                thirds the wordiest locales ('Doğru mu Yanlış mı', 'Verdadero
+                o Falso') ellipsize on 360dp phones even at the font-shrink
+                floor. A locale that overflows the row wraps its longest chip
+                to a full-width line instead. */}
+            <XStack gap={spacing.xs} flexWrap="wrap">
+              {formatOptions.map((option) => {
+                const selected = format === option.key;
+                return (
+                  <Pressable
+                    key={option.key}
+                    onPress={() => setFormat(option.key)}
+                    disabled={!option.enabled}
+                    // Lifts the ~35pt pill to the 44pt touch-target guideline.
+                    hitSlop={{ top: 6, bottom: 6 }}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected, disabled: !option.enabled }}
+                    accessibilityLabel={option.label}
+                    testID={`trivia-format-${option.key}`}
+                    style={({ pressed }) => ({
+                      flexGrow: 1,
+                      opacity: !option.enabled ? 0.35 : pressed ? 0.8 : 1,
+                    })}
+                  >
+                    <YStack
+                      paddingVertical={spacing.sm}
+                      paddingHorizontal={spacing.sm}
+                      borderRadius={radius.full}
+                      borderWidth={1}
+                      borderColor={selected ? option.color : borderColor}
+                      backgroundColor={selected ? option.color : 'transparent'}
+                      alignItems="center"
+                      justifyContent="center"
+                    >
+                      <Text.Caption
+                        fontFamily={FONT_FAMILIES.semibold}
+                        color={selected ? getContrastColor(option.color) : secondaryTextColor}
+                        numberOfLines={1}
+                        textAlign="center"
+                      >
+                        {option.label}
+                      </Text.Caption>
+                    </YStack>
+                  </Pressable>
+                );
+              })}
+            </XStack>
           </YStack>
-        </XStack>
+        ) : (
+          <XStack
+            backgroundColor={surfaceColor}
+            borderRadius={radius.md}
+            padding={spacing.md}
+            alignItems="center"
+            gap={spacing.sm}
+          >
+            <CheckCircle size={typography.fontSize.title} color={isDark ? '#FBBF24' : '#F59E0B'} />
+            <YStack flex={1}>
+              <Text.Caption fontFamily={FONT_FAMILIES.medium} color={textColor}>
+                {t('triviaQuestionType')}
+              </Text.Caption>
+              <Text.Tiny color={secondaryTextColor}>{t('triviaQuestionTypeDesc')}</Text.Tiny>
+            </YStack>
+          </XStack>
+        )}
       </YStack>
 
       {/* Start Button */}
       <YStack paddingHorizontal={spacing.lg} paddingBottom={spacing.lg}>
         <Pressable
-          onPress={onStart}
+          onPress={() => onStart(selectedFormat)}
           style={({ pressed }) => ({
             opacity: pressed ? 0.9 : 1,
             transform: [{ scale: pressed ? 0.98 : 1 }],

@@ -97,9 +97,19 @@ function getUtcDateString(date: Date = new Date()): string {
 export { MIN_SECONDS_PER_QUESTION, TIME_PER_QUESTION } from '../config/trivia';
 
 // Calculate estimated time for a quiz in minutes
-export function getEstimatedTimeMinutes(questionCount: number): number {
-  const totalSeconds = questionCount * TIME_PER_QUESTION.AVERAGE;
-  return Math.ceil(totalSeconds / 60);
+export function getEstimatedTimeMinutes(
+  questionCount: number,
+  format?: api.TriviaQuestionFormat
+): number {
+  // Format-only rounds pace differently (T/F reads faster than 3-option);
+  // no format means a mixed batch, estimated at the average.
+  const secondsPerQuestion =
+    format === 'true_false'
+      ? TIME_PER_QUESTION.TRUE_FALSE
+      : format === 'multiple_choice'
+        ? TIME_PER_QUESTION.MULTIPLE_CHOICE
+        : TIME_PER_QUESTION.AVERAGE;
+  return Math.ceil((questionCount * secondsPerQuestion) / 60);
 }
 
 // Types
@@ -125,7 +135,6 @@ export interface CategoryWithProgress extends Category {
   accuracy: number;
   isComplete: boolean;
 }
-
 
 // ====== DAILY TRIVIA ======
 
@@ -161,7 +170,8 @@ export async function getTriviaAvailability(language: string): Promise<{
     MIXED_TRIVIA_QUESTIONS
   );
   // Per-format counts arrived with the format-only modes; a pre-upgrade server
-  // omits them — normalize to 0 so those cards render disabled, not broken.
+  // omits them — normalize to 0 so the intro modal's format chips render
+  // inert, not broken.
   return {
     daily: counts.daily,
     mixed: counts.mixed,
@@ -296,7 +306,13 @@ function withAggregates(
 /** Per-mode games + accuracy for the performance screen. Legacy 'quick'
  * sessions (the removed Quick Quiz) fold into 'mixed'. */
 export async function getModeBreakdown(): Promise<
-  { mode: 'daily' | 'mixed' | 'true_false' | 'multiple_choice' | 'category'; games: number; answered: number; correct: number; accuracy: number }[]
+  {
+    mode: 'daily' | 'mixed' | 'true_false' | 'multiple_choice' | 'category';
+    games: number;
+    answered: number;
+    correct: number;
+    accuracy: number;
+  }[]
 > {
   const rows = await database.getModeAggregates();
   const byMode = new Map<string, { games: number; answered: number; correct: number }>();

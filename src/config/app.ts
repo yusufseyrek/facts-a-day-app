@@ -412,8 +412,9 @@ export const HINT_PACK_IDS = Object.keys(HINT_PACKS.HINTS_BY_PRODUCT);
  * Paywall prompt settings (auto-show interval)
  */
 export const PAYWALL_PROMPT = {
-  /** Minimum days between automatic paywall prompts */
-  MIN_DAYS_BETWEEN_PROMPTS: 1,
-  /** Delay after screen focus before showing paywall (ms) */
+  /** Minimum days between automatic (cold-start) paywall prompts */
+  MIN_DAYS_BETWEEN_PROMPTS: 3,
+  /** Delay after cold start before showing the paywall (ms) — lets the home
+   *  screen paint first and gives a push-notification launch time to navigate. */
   DELAY_MS: 1500,
 } as const;

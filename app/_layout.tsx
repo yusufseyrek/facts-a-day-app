@@ -75,6 +75,7 @@ import {
   useOnboarding,
   waitForFeedLoaded,
 } from '../src/contexts';
+import { useColdStartPaywall } from '../src/hooks/useColdStartPaywall';
 import { formSheetFloats } from '../src/hooks/useFormSheetBottomPadding';
 import { getLocaleFromCode, I18nProvider } from '../src/i18n';
 import { initializeAdsForReturningUser } from '../src/services/ads';
@@ -220,6 +221,10 @@ function AppContent() {
   const segments = useSegments();
   const { isOnboardingComplete, setIsOnboardingComplete } = useOnboarding();
   const { theme } = useTheme();
+
+  // Auto-show the paywall once every few days on a cold start (non-premium,
+  // post-onboarding). Timing + placement guards live in the hook.
+  useColdStartPaywall(isOnboardingComplete === true);
 
   // Get theme-aware background color for screens and modals
   const backgroundColor = theme === 'dark' ? hexColors.dark.background : hexColors.light.background;

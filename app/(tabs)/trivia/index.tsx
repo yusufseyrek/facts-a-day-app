@@ -26,6 +26,7 @@ import { hexToHue } from '../../../src/utils/colors';
 import { isMacOS } from '../../../src/utils/platform';
 import { useResponsive } from '../../../src/utils/useResponsive';
 
+import type { TriviaQuestionFormat } from '../../../src/services/api';
 import type { CategoryWithProgress } from '../../../src/services/trivia';
 
 export default function TriviaScreen() {
@@ -67,7 +68,8 @@ export default function TriviaScreen() {
   const [dailyQuestionsCount, setDailyQuestionsCount] = useState(0);
   const [isDailyCompleted, setIsDailyCompleted] = useState(false);
   const [mixedQuestionsCount, setMixedQuestionsCount] = useState(0);
-  // Per-format slices of the mixed pool — gate the T/F-only and MC-only cards.
+  // Per-format slices of the mixed pool — gate and size the question-type
+  // selector inside the mixed intro modal.
   const [trueFalseCount, setTrueFalseCount] = useState(0);
   const [multipleChoiceCount, setMultipleChoiceCount] = useState(0);
   const [overallStats, setOverallStats] = useState<triviaService.TriviaStats | null>(null);
@@ -76,7 +78,7 @@ export default function TriviaScreen() {
 
   // Pending trivia modal state
   const [pendingTrivia, setPendingTrivia] = useState<{
-    type: 'daily' | 'mixed' | 'category' | 'true_false' | 'multiple_choice';
+    type: 'daily' | 'mixed' | 'category';
     categorySlug?: string;
     categoryName?: string;
     categoryDescription?: string;
@@ -296,20 +298,6 @@ export default function TriviaScreen() {
     });
   };
 
-  // Format-only modes: the same mixed pool through a single-format lens, so
-  // they share mixed's personal-history numbers in the intro.
-  const showFormatTriviaIntro = (format: 'true_false' | 'multiple_choice') => {
-    const available = format === 'true_false' ? trueFalseCount : multipleChoiceCount;
-    setPendingTrivia({
-      type: format,
-      questionCount: Math.min(available, triviaService.MIXED_TRIVIA_QUESTIONS),
-      masteredCount: overallStats?.totalMastered || 0,
-      totalQuestions: available,
-      answeredCount: overallStats?.totalAnswered || 0,
-      correctCount: overallStats?.totalCorrect || 0,
-    });
-  };
-
   const showCategoryTriviaIntro = (category: CategoryWithProgress) => {
     // Category sessions fetch a fixed number of questions from the API on start;
     // there's no local pool to subtract a "mastered" count from. Show the
@@ -329,7 +317,7 @@ export default function TriviaScreen() {
     setPendingTrivia(null);
   };
 
-  const handleStartFromIntroModal = () => {
+  const handleStartFromIntroModal = (format?: TriviaQuestionFormat) => {
     if (!pendingTrivia) return;
 
     const triviaInfo = pendingTrivia;
@@ -339,9 +327,9 @@ export default function TriviaScreen() {
     if (triviaInfo.type === 'daily') {
       router.push('/trivia/game?type=daily');
     } else if (triviaInfo.type === 'mixed') {
-      router.push('/trivia/game?type=mixed');
-    } else if (triviaInfo.type === 'true_false' || triviaInfo.type === 'multiple_choice') {
-      router.push(`/trivia/game?type=${triviaInfo.type}`);
+      // A format narrowed in the modal's selector routes to the format-only
+      // lens over the mixed pool; otherwise the full mixed batch.
+      router.push(`/trivia/game?type=${format ?? 'mixed'}`);
     } else if (triviaInfo.type === 'category' && triviaInfo.categorySlug) {
       router.push(
         `/trivia/game?type=category&categorySlug=${triviaInfo.categorySlug}&categoryName=${encodeURIComponent(triviaInfo.categoryName || '')}`
@@ -394,7 +382,10 @@ export default function TriviaScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={() => loadTriviaData(true)} />
           }
         >
-          <ContentContainer paddingTop={headerGap + spacing.sm} paddingBottom={spacing.xl + bannerInset}>
+          <ContentContainer
+            paddingTop={headerGap + spacing.sm}
+            paddingBottom={spacing.xl + bannerInset}
+          >
             {/* Always show Stats */}
             <Animated.View
               entering={FadeInDown.delay(50).duration(300)}
@@ -522,35 +513,6 @@ export default function TriviaScreen() {
                     </XStack>
                   </Animated.View>
 
-                  {/* Second row: format-only lenses over the mixed pool */}
-                  <Animated.View
-                    entering={FadeInDown.delay(175).duration(300)}
-                    needsOffscreenAlphaCompositing={Platform.OS === 'android'}
-                  >
-                    <XStack gap={spacing.lg}>
-                      <TriviaGridCard
-                        type="true_false"
-                        title={t('trueFalseTrivia')}
-                        subtitle={t('trueFalseTriviaDescription')}
-                        isDisabled={!countsLoading && trueFalseCount === 0}
-                        isLoading={countsLoading}
-                        isDark={isDark}
-                        onPress={() => showFormatTriviaIntro('true_false')}
-                        centerContent={isTablet}
-                      />
-                      <TriviaGridCard
-                        type="multiple_choice"
-                        title={t('multipleChoiceTrivia')}
-                        subtitle={t('multipleChoiceTriviaDescription')}
-                        isDisabled={!countsLoading && multipleChoiceCount === 0}
-                        isLoading={countsLoading}
-                        isDark={isDark}
-                        onPress={() => showFormatTriviaIntro('multiple_choice')}
-                        centerContent={isTablet}
-                      />
-                    </XStack>
-                  </Animated.View>
-
                   {/* Category rows */}
                   {categoryRows.map((row, rowIndex) => (
                     <Animated.View
@@ -660,6 +622,8 @@ export default function TriviaScreen() {
         categoryIcon={modalData?.categoryIcon}
         categoryColor={modalData?.categoryColor}
         questionCount={modalData?.questionCount || 0}
+        trueFalseCount={trueFalseCount}
+        multipleChoiceCount={multipleChoiceCount}
         masteredCount={modalData?.masteredCount}
         totalQuestions={modalData?.totalQuestions}
         answeredCount={modalData?.answeredCount}
