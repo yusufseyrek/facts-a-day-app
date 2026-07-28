@@ -101,7 +101,7 @@
     "expo-status-bar": "~57.0.0",
     "expo-store-review": "~57.0.0",
     "expo-task-manager": "~57.0.2",
-    "expo-tracking-transparency": "~57.0.0",
+    "expo-tracking-transparency": "~57.0.1",
     "expo-updates": "~57.0.6",
     "expo-web-browser": "~57.0.0",
     "i18n-js": "^4.5.3",
