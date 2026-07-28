@@ -1,0 +1,328 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "lastUpdated": "2026-07-29",
+    "description": "Consumable in-app purchases (trivia hint packs) for App Store Connect and Google Play Console. Copy is derived from the in-app hint-store strings in src/i18n/translations.ts so the store listing and the sheet say the same thing.",
+    "sourceOfTruth": "src/config/app.ts -> HINT_PACKS.HINTS_BY_PRODUCT (product ids + hint counts must match exactly)",
+    "characterLimits": {
+      "ios": {
+        "referenceName": 64,
+        "displayName": 30,
+        "description": 45,
+        "reviewNote": 4000
+      },
+      "android": {
+        "productId": 40,
+        "name": 55,
+        "description": 200
+      }
+    },
+    "localeMappings": {
+      "en": { "ios": "en-US", "android": "en-US" },
+      "de": { "ios": "de-DE", "android": "de-DE" },
+      "es": { "ios": "es-MX", "android": "es-419" },
+      "fr": { "ios": "fr-FR", "android": "fr-FR" },
+      "ja": { "ios": "ja", "android": "ja-JP" },
+      "ko": { "ios": "ko", "android": "ko-KR" },
+      "tr": { "ios": "tr", "android": "tr-TR" },
+      "zh": { "ios": "zh-Hans", "android": "zh-CN" }
+    },
+    "notes": [
+      "en-US / es-419 are the default locales in each console; every other locale falls back to them, so those two must always be filled in.",
+      "Apple rejects display names or descriptions that contain a price, a discount claim, or the word free. Keep the value framing (BEST VALUE badge) inside the app only.",
+      "Product ids are permanent. Apple never allows reuse of an id, Google never allows reuse of a deleted one."
+    ]
+  },
+
+  "ios": {
+    "bundleId": "dev.seyrek.factsaday",
+    "type": "CONSUMABLE",
+    "familySharable": false,
+    "taxCategory": "App Store Software",
+    "availability": "All countries and regions",
+    "basePriceTerritory": "United States",
+    "reviewScreenshot": "marketing/output/iap/ios/hint_store_review.png"
+  },
+
+  "android": {
+    "packageName": "dev.seyrek.factsaday",
+    "productType": "one-time product",
+    "consumed": true,
+    "defaultLanguage": "en-US",
+    "defaultCurrency": "USD",
+    "priceConversion": "Auto-convert from the USD default price to all other markets",
+    "taxCategory": "Standard digital goods"
+  },
+
+  "products": [
+    {
+      "productId": "factsaday_hints_small",
+      "hints": 20,
+      "referenceName": "Trivia Hints 20",
+      "price": { "usd": 0.99, "priceMicros": "990000", "currency": "USD" },
+      "reviewNote": "Consumable hint pack for the in-app trivia quizzes. Path to the purchase: launch the app, open the Trivia tab in the bottom bar, then tap the hint balance pill on the Game Modes row to open the Hint Store sheet (the same sheet also opens from the Get Hints pill during a game). Select the 20 pack and tap the buy button. Hints are credited to an on-device balance, never expire, and are spent one at a time to reveal a clue on a trivia question. No account or login is required, and no other purchase is needed to reach this screen.",
+      "locales": {
+        "en": {
+          "ios": {
+            "displayName": "20 Trivia Hints",
+            "description": "Reveal a clue when a question has you stuck."
+          },
+          "android": {
+            "name": "20 Trivia Hints",
+            "description": "20 hints for the trivia quizzes. Reveal a clue when a question has you stuck. Hints never expire and work in every trivia mode."
+          }
+        },
+        "de": {
+          "ios": {
+            "displayName": "20 Quiz-Hinweise",
+            "description": "Zeigt einen Hinweis, wenn du feststeckst."
+          },
+          "android": {
+            "name": "20 Quiz-Hinweise",
+            "description": "20 Hinweise für die Quizfragen. Zeigt einen Hinweis, wenn du bei einer Frage feststeckst. Hinweise verfallen nie und gelten in jedem Quiz-Modus."
+          }
+        },
+        "es": {
+          "ios": {
+            "displayName": "20 pistas de trivia",
+            "description": "Revela una pista si una pregunta te atasca."
+          },
+          "android": {
+            "name": "20 pistas de trivia",
+            "description": "20 pistas para los cuestionarios de trivia. Revela una pista cuando una pregunta te tenga atascado. Las pistas nunca caducan y sirven en todos los modos de trivia."
+          }
+        },
+        "fr": {
+          "ios": {
+            "displayName": "20 indices de quiz",
+            "description": "Un indice quand une question vous bloque."
+          },
+          "android": {
+            "name": "20 indices de quiz",
+            "description": "20 indices pour les quiz. Révèle un indice quand une question vous bloque. Les indices n'expirent jamais et fonctionnent dans tous les modes de quiz."
+          }
+        },
+        "ja": {
+          "ios": {
+            "displayName": "トリビアヒント20個",
+            "description": "問題に行き詰まったらヒントを表示できます。"
+          },
+          "android": {
+            "name": "トリビアヒント20個",
+            "description": "トリビアクイズ用のヒント20個。問題に行き詰まったときにヒントを表示できます。ヒントに有効期限はなく、すべてのトリビアモードで使えます。"
+          }
+        },
+        "ko": {
+          "ios": {
+            "displayName": "트리비아 힌트 20개",
+            "description": "문제가 막힐 때 힌트를 확인하세요."
+          },
+          "android": {
+            "name": "트리비아 힌트 20개",
+            "description": "트리비아 퀴즈용 힌트 20개. 문제가 막힐 때 힌트를 확인하세요. 힌트는 만료되지 않으며 모든 트리비아 모드에서 사용할 수 있습니다."
+          }
+        },
+        "tr": {
+          "ios": {
+            "displayName": "20 Trivia İpucu",
+            "description": "Bir soruda takıldığında ipucu gösterir."
+          },
+          "android": {
+            "name": "20 Trivia İpucu",
+            "description": "Trivia soruları için 20 ipucu. Bir soruda takıldığında ipucunu görüntüle. İpuçlarının süresi dolmaz ve tüm trivia modlarında geçerlidir."
+          }
+        },
+        "zh": {
+          "ios": {
+            "displayName": "20 条问答提示",
+            "description": "遇到难题时可以查看提示。"
+          },
+          "android": {
+            "name": "20 条问答提示",
+            "description": "20 条问答提示。遇到难题时可以查看提示。提示永不过期，适用于所有问答模式。"
+          }
+        }
+      }
+    },
+
+    {
+      "productId": "factsaday_hints_medium",
+      "hints": 50,
+      "referenceName": "Trivia Hints 50",
+      "price": { "usd": 1.99, "priceMicros": "1990000", "currency": "USD" },
+      "reviewNote": "Consumable hint pack for the in-app trivia quizzes. Path to the purchase: launch the app, open the Trivia tab in the bottom bar, then tap the hint balance pill on the Game Modes row to open the Hint Store sheet (the same sheet also opens from the Get Hints pill during a game). Select the 50 pack and tap the buy button. Hints are credited to an on-device balance, never expire, and are spent one at a time to reveal a clue on a trivia question. No account or login is required, and no other purchase is needed to reach this screen.",
+      "locales": {
+        "en": {
+          "ios": {
+            "displayName": "50 Trivia Hints",
+            "description": "Reveal a clue when a question has you stuck."
+          },
+          "android": {
+            "name": "50 Trivia Hints",
+            "description": "50 hints for the trivia quizzes. Reveal a clue when a question has you stuck. Hints never expire and work in every trivia mode."
+          }
+        },
+        "de": {
+          "ios": {
+            "displayName": "50 Quiz-Hinweise",
+            "description": "Zeigt einen Hinweis, wenn du feststeckst."
+          },
+          "android": {
+            "name": "50 Quiz-Hinweise",
+            "description": "50 Hinweise für die Quizfragen. Zeigt einen Hinweis, wenn du bei einer Frage feststeckst. Hinweise verfallen nie und gelten in jedem Quiz-Modus."
+          }
+        },
+        "es": {
+          "ios": {
+            "displayName": "50 pistas de trivia",
+            "description": "Revela una pista si una pregunta te atasca."
+          },
+          "android": {
+            "name": "50 pistas de trivia",
+            "description": "50 pistas para los cuestionarios de trivia. Revela una pista cuando una pregunta te tenga atascado. Las pistas nunca caducan y sirven en todos los modos de trivia."
+          }
+        },
+        "fr": {
+          "ios": {
+            "displayName": "50 indices de quiz",
+            "description": "Un indice quand une question vous bloque."
+          },
+          "android": {
+            "name": "50 indices de quiz",
+            "description": "50 indices pour les quiz. Révèle un indice quand une question vous bloque. Les indices n'expirent jamais et fonctionnent dans tous les modes de quiz."
+          }
+        },
+        "ja": {
+          "ios": {
+            "displayName": "トリビアヒント50個",
+            "description": "問題に行き詰まったらヒントを表示できます。"
+          },
+          "android": {
+            "name": "トリビアヒント50個",
+            "description": "トリビアクイズ用のヒント50個。問題に行き詰まったときにヒントを表示できます。ヒントに有効期限はなく、すべてのトリビアモードで使えます。"
+          }
+        },
+        "ko": {
+          "ios": {
+            "displayName": "트리비아 힌트 50개",
+            "description": "문제가 막힐 때 힌트를 확인하세요."
+          },
+          "android": {
+            "name": "트리비아 힌트 50개",
+            "description": "트리비아 퀴즈용 힌트 50개. 문제가 막힐 때 힌트를 확인하세요. 힌트는 만료되지 않으며 모든 트리비아 모드에서 사용할 수 있습니다."
+          }
+        },
+        "tr": {
+          "ios": {
+            "displayName": "50 Trivia İpucu",
+            "description": "Bir soruda takıldığında ipucu gösterir."
+          },
+          "android": {
+            "name": "50 Trivia İpucu",
+            "description": "Trivia soruları için 50 ipucu. Bir soruda takıldığında ipucunu görüntüle. İpuçlarının süresi dolmaz ve tüm trivia modlarında geçerlidir."
+          }
+        },
+        "zh": {
+          "ios": {
+            "displayName": "50 条问答提示",
+            "description": "遇到难题时可以查看提示。"
+          },
+          "android": {
+            "name": "50 条问答提示",
+            "description": "50 条问答提示。遇到难题时可以查看提示。提示永不过期，适用于所有问答模式。"
+          }
+        }
+      }
+    },
+
+    {
+      "productId": "factsaday_hints_large",
+      "hints": 100,
+      "referenceName": "Trivia Hints 100",
+      "price": { "usd": 2.99, "priceMicros": "2990000", "currency": "USD" },
+      "reviewNote": "Consumable hint pack for the in-app trivia quizzes. Path to the purchase: launch the app, open the Trivia tab in the bottom bar, then tap the hint balance pill on the Game Modes row to open the Hint Store sheet (the same sheet also opens from the Get Hints pill during a game). Select the 100 pack and tap the buy button. Hints are credited to an on-device balance, never expire, and are spent one at a time to reveal a clue on a trivia question. No account or login is required, and no other purchase is needed to reach this screen.",
+      "locales": {
+        "en": {
+          "ios": {
+            "displayName": "100 Trivia Hints",
+            "description": "Reveal a clue when a question has you stuck."
+          },
+          "android": {
+            "name": "100 Trivia Hints",
+            "description": "100 hints for the trivia quizzes. Reveal a clue when a question has you stuck. Hints never expire and work in every trivia mode."
+          }
+        },
+        "de": {
+          "ios": {
+            "displayName": "100 Quiz-Hinweise",
+            "description": "Zeigt einen Hinweis, wenn du feststeckst."
+          },
+          "android": {
+            "name": "100 Quiz-Hinweise",
+            "description": "100 Hinweise für die Quizfragen. Zeigt einen Hinweis, wenn du bei einer Frage feststeckst. Hinweise verfallen nie und gelten in jedem Quiz-Modus."
+          }
+        },
+        "es": {
+          "ios": {
+            "displayName": "100 pistas de trivia",
+            "description": "Revela una pista si una pregunta te atasca."
+          },
+          "android": {
+            "name": "100 pistas de trivia",
+            "description": "100 pistas para los cuestionarios de trivia. Revela una pista cuando una pregunta te tenga atascado. Las pistas nunca caducan y sirven en todos los modos de trivia."
+          }
+        },
+        "fr": {
+          "ios": {
+            "displayName": "100 indices de quiz",
+            "description": "Un indice quand une question vous bloque."
+          },
+          "android": {
+            "name": "100 indices de quiz",
+            "description": "100 indices pour les quiz. Révèle un indice quand une question vous bloque. Les indices n'expirent jamais et fonctionnent dans tous les modes de quiz."
+          }
+        },
+        "ja": {
+          "ios": {
+            "displayName": "トリビアヒント100個",
+            "description": "問題に行き詰まったらヒントを表示できます。"
+          },
+          "android": {
+            "name": "トリビアヒント100個",
+            "description": "トリビアクイズ用のヒント100個。問題に行き詰まったときにヒントを表示できます。ヒントに有効期限はなく、すべてのトリビアモードで使えます。"
+          }
+        },
+        "ko": {
+          "ios": {
+            "displayName": "트리비아 힌트 100개",
+            "description": "문제가 막힐 때 힌트를 확인하세요."
+          },
+          "android": {
+            "name": "트리비아 힌트 100개",
+            "description": "트리비아 퀴즈용 힌트 100개. 문제가 막힐 때 힌트를 확인하세요. 힌트는 만료되지 않으며 모든 트리비아 모드에서 사용할 수 있습니다."
+          }
+        },
+        "tr": {
+          "ios": {
+            "displayName": "100 Trivia İpucu",
+            "description": "Bir soruda takıldığında ipucu gösterir."
+          },
+          "android": {
+            "name": "100 Trivia İpucu",
+            "description": "Trivia soruları için 100 ipucu. Bir soruda takıldığında ipucunu görüntüle. İpuçlarının süresi dolmaz ve tüm trivia modlarında geçerlidir."
+          }
+        },
+        "zh": {
+          "ios": {
+            "displayName": "100 条问答提示",
+            "description": "遇到难题时可以查看提示。"
+          },
+          "android": {
+            "name": "100 条问答提示",
+            "description": "100 条问答提示。遇到难题时可以查看提示。提示永不过期，适用于所有问答模式。"
+          }
+        }
+      }
+    }
+  ]
+}
