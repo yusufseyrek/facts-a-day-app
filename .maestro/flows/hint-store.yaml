@@ -1,0 +1,32 @@
+# Hint Store Screenshot Flow (App Store Connect IAP review screenshot)
+# Not part of the marketing gallery. Apple requires one review screenshot per
+# in-app purchase; this captures the hint-store sheet that sells all three
+# packs, so the same image can be attached to all three products.
+#
+# Run it directly (the app must already be installed and the store products
+# fetched, otherwise the tiles render "---"):
+#   maestro --device <udid> test .maestro/flows/hint-store.yaml \
+#     -e OUTPUT_DIR=marketing/output/iap/ios
+
+appId: dev.seyrek.factsaday
+
+---
+# Open the hint store via deep link (expo-router route /hint-store).
+# `source` only tags analytics.
+- openLink: factsaday://hint-store?source=review_screenshot
+
+# Wait for the sheet, then let the form-sheet presentation settle.
+- extendedWaitUntil:
+    visible:
+      id: 'hint-store-sheet'
+    timeout: 10000
+
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# The CTA carries the live price, so its presence means the store answered and
+# the pack tiles show real prices rather than the "---" placeholder.
+- assertVisible:
+    id: 'hint-store-cta'
+
+- takeScreenshot: ${OUTPUT_DIR}/hint_store_review

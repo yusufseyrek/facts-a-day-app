@@ -318,6 +318,7 @@ export default function HintStoreScreen() {
           disabled={isPurchasing || !selectedAvailable}
           role="button"
           aria-label={ctaLabel}
+          testID="hint-store-cta"
           style={({ pressed }) => [
             styles.ctaButton,
             (isPurchasing || !selectedAvailable) && styles.ctaButtonDisabled,
@@ -366,7 +367,7 @@ export default function HintStoreScreen() {
   // fixed-size card that ignores the detent and would otherwise clip.
   if (isTablet || isMacOS()) {
     return (
-      <View style={styles.scrollRoot}>
+      <View style={styles.scrollRoot} testID="hint-store-sheet">
         {backdrop}
         <ScrollView
           style={styles.scroll}
@@ -381,7 +382,7 @@ export default function HintStoreScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} testID="hint-store-sheet">
       {backdrop}
       {content}
     </View>
