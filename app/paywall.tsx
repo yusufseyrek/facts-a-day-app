@@ -365,7 +365,10 @@ export default function PaywallScreen() {
           paddingHorizontal: spacing.md,
           borderRadius: radius.lg,
           borderWidth: borderWidths.thin,
-          borderColor: useGlass ? 'transparent' : tc.planBorder,
+          // Hairline is kept under glass too (unlike the fills): the glass
+          // specular rim alone is too faint on the dark gradient, so unselected
+          // cards read as border-less without it. Matches remove-ads planCard.
+          borderColor: tc.planBorder,
           backgroundColor: useGlass ? 'transparent' : tc.planBg,
           minHeight: media.buttonHeight + spacing.lg,
           // NO overflow:'hidden' here — the SAVE badge hangs over the top edge.
