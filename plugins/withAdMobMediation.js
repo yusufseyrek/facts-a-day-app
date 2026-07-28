@@ -32,7 +32,7 @@ const IOS_PODS = [
 // the unity-ads SDK is pinned separately and the two Unity lines move together
 // (adapter X.Y.Z.0 pairs with unity-ads X.Y.Z).
 const ANDROID_DEPENDENCIES = [
-  "com.google.ads.mediation:vungle:7.7.4.2",
+  "com.google.ads.mediation:vungle:7.7.6.0",
   "com.unity3d.ads:unity-ads:4.19.0",
   "com.google.ads.mediation:unity:4.19.0.0",
 ];
