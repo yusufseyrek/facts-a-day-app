@@ -53,9 +53,10 @@ const RAIL_COLUMNS = Array.from(
 );
 
 /**
- * Claim or change the unique screen name. Availability is checked live
- * (debounced) against the backend; the actual claim still handles the 409
- * race of two users grabbing the same name between check and submit.
+ * Claim or edit the public profile: unique screen name + avatar. Name
+ * availability is checked live (debounced) against the backend; the actual
+ * claim still handles the 409 race of two users grabbing the same name
+ * between check and submit.
  */
 export function ScreenNameModal({
   visible,
@@ -182,7 +183,7 @@ export function ScreenNameModal({
       onClose={handleClose}
       keyboardAware
       presentInWindow={presentInWindow}
-      title={currentName ? t('screenNameChangeTitle') : t('screenNameTitle')}
+      title={currentName ? t('screenNameChangeTitle') : t('profileSetupTitle')}
       showClose
       maxWidth={maxModalWidth}
       footer={
