@@ -22,13 +22,14 @@ interface StarRatingProps {
 export function StarRating({ earnedCount, totalStars = 3, size = 14, gap = 3 }: StarRatingProps) {
   const { theme } = useTheme();
   const emptyColor = STAR_COLORS.empty[theme];
+  const filledStroke = STAR_COLORS.filledStroke[theme];
 
   return (
     <XStack gap={gap} alignItems="center">
       {Array.from({ length: totalStars }).map((_, i) => {
         const isFilled = i < earnedCount;
         const xml = isFilled
-          ? buildStarSvg(size, STAR_COLORS.filled, STAR_COLORS.filled)
+          ? buildStarSvg(size, STAR_COLORS.filled, filledStroke)
           : buildStarSvg(size, 'none', emptyColor);
         return <SvgXml key={i} xml={xml} width={size} height={size} />;
       })}

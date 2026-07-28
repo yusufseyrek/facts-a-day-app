@@ -43,8 +43,17 @@ export interface BadgeDefinition {
 // ============================================
 export const STAR_COLORS = {
   filled: '#FFB800',
+  // Stroke around the FILLED glyph. Light theme borrows the palette's dark
+  // amber (hexColors.light.neonYellow): bare #FFB800 at rating sizes is
+  // ~1.9:1 on white cards and washes out. Dark keeps the self-stroked gold.
+  filledStroke: {
+    light: '#B45309',
+    dark: '#FFB800',
+  },
   empty: {
-    light: '#D1D5DB',
+    // Light is hexColors.light.textMuted; the old #D1D5DB outline was ~1.5:1
+    // against the white card and effectively invisible.
+    light: '#7A99B8',
     dark: '#374151',
   },
 } as const;
