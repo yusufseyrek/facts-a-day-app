@@ -12,6 +12,24 @@ node marketing/scripts/validate-iap.js          # limits, parity, price sanity
 node marketing/scripts/validate-iap.js --csv    # paste-ready listing tables
 ```
 
+Both stores are driven by the uploader, which is idempotent and safe to re-run
+after a copy edit. Sections 3 and 4 below describe the same work by hand, for
+when you would rather use the console.
+
+```bash
+node marketing/scripts/upload-iap.js --all --dry-run   # show every request
+node marketing/scripts/upload-iap.js --all             # push both stores
+node marketing/scripts/upload-iap.js --ios --product factsaday_hints_small
+```
+
+It requires `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_PATH` and
+`GOOGLE_PLAY_JSON_KEY`, the same variables `upload-metadata.sh` uses, and it
+refuses to run if `validate-iap.js` fails. Google's OAuth host is outside the
+default sandbox, so run it unsandboxed.
+
+What it does not do: submit the iOS products for review. That is deliberate,
+see section 9.
+
 ---
 
 ## 1. What ships
@@ -86,7 +104,24 @@ Per product (3 times):
 
 ## 4. Google Play Console
 
-Per product (3 times):
+The legacy `inappproducts` API is retired for this account (it answers
+`403 Please migrate to the new publishing API`), so the uploader uses the
+one-time products API instead:
+
+| Step | Call |
+|---|---|
+| USD to every region | `POST /applications/{pkg}/pricing:convertRegionPrices` |
+| Create or update | `PATCH /applications/{pkg}/onetimeproducts/{id}?allowMissing=true` |
+| Activate | `POST /.../oneTimeProducts/{id}/purchaseOptions:batchUpdateStates` |
+
+Two things that API insists on. `regionsVersion.version` is a required query
+parameter on every upsert (currently `2025/03`, and any `convertRegionPrices`
+response reports the live value). And a PATCH that carries `purchaseOptions`
+must repeat *every* existing purchase option or it fails with "Product must
+list all of its existing purchase options", which is why the uploader updates
+only `listings` on a product that already exists and leaves pricing untouched.
+
+By hand instead, per product:
 
 1. **Monetize → Products → In-app products → Create product**
    (labelled "One-time products" in the newer console layout).
@@ -125,9 +160,17 @@ Per product (3 times):
 
 ## 5. Review screenshot (required by Apple)
 
-Apple requires one screenshot per in-app purchase, minimum 640x920, PNG or JPG.
-The hint store sheet shows all three packs, so the same image can be attached to
-all three products.
+Apple requires one screenshot per in-app purchase. The hint store sheet shows
+all three packs, so the same image is attached to all three products (the
+uploader does this when the file at `ios.reviewScreenshot` exists).
+
+**Dimensions are validated, and the failure is asynchronous.** The upload
+returns 201 and then the asset lands in `assetDeliveryState.state = FAILED`
+with `IMAGE_INCORRECT_DIMENSIONS` a few seconds later, so a successful-looking
+run can still leave the product in `MISSING_METADATA`. It has to be a real
+device screenshot size; 1206x2622 (iPhone 16 Pro) is what this app uses. A
+rejected asset also occupies the slot and blocks a replacement, so the uploader
+deletes a non-`COMPLETE` asset before retrying.
 
 ```bash
 # Boot the sim and install a build first, then:
@@ -198,3 +241,22 @@ That map is plain JS, so it ships over OTA and does not need a native rebuild.
 - Play returns no products at all until the app is published on some track with
   the same package name and signing key, which reads exactly like a broken
   integration.
+
+---
+
+## 9. Submission is gated on a build, not on the metadata
+
+The uploader stops at `READY_TO_SUBMIT` on purpose. App Review opens the app
+and follows the review note to find the purchase, so an in-app purchase can
+only be submitted alongside (or after) a build that actually contains the hint
+store.
+
+The hint store landed on 2026-07-03. App Store version 1.3.4, live since
+2026-06-27, predates it. So the three products must be submitted **with the
+next app version**, not on their own, or they come back as "we were unable to
+locate the in-app purchases".
+
+In App Store Connect that means adding them to the version under
+**In-App Purchases and Subscriptions** on the version page before submitting.
+Play has no equivalent gate: its products are already active and will resolve
+as soon as a build containing the hint store reaches a track.
