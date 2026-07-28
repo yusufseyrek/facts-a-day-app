@@ -233,15 +233,18 @@ export async function getMixedTriviaQuestions(
 
 /**
  * Get questions for a category trivia session
- * Returns N unmastered questions from the category (default 10 questions)
+ * Returns N unmastered questions from the category (default 10 questions).
+ * `format` narrows the category pool to one question type — the same lens
+ * the intro dialog offers over the mixed pool.
  */
 export async function getCategoryTriviaQuestions(
   categorySlug: string,
   language: string,
-  limit: number = CATEGORY_TRIVIA_QUESTIONS
+  limit: number = CATEGORY_TRIVIA_QUESTIONS,
+  format?: api.TriviaQuestionFormat
 ): Promise<QuestionWithFact[]> {
   const answered = await getAnsweredQuestionIds();
-  const questions = await api.getTriviaCategory(categorySlug, language, limit, answered);
+  const questions = await api.getTriviaCategory(categorySlug, language, limit, answered, format);
   return hydrateTriviaQuestions(questions, language);
 }
 

@@ -331,8 +331,11 @@ export default function TriviaScreen() {
       // lens over the mixed pool; otherwise the full mixed batch.
       router.push(`/trivia/game?type=${format ?? 'mixed'}`);
     } else if (triviaInfo.type === 'category' && triviaInfo.categorySlug) {
+      // A format narrowed in the modal rides along as its own param (the
+      // route type stays 'category' — format-as-type is mixed-only).
+      const formatParam = format ? `&format=${format}` : '';
       router.push(
-        `/trivia/game?type=category&categorySlug=${triviaInfo.categorySlug}&categoryName=${encodeURIComponent(triviaInfo.categoryName || '')}`
+        `/trivia/game?type=category&categorySlug=${triviaInfo.categorySlug}&categoryName=${encodeURIComponent(triviaInfo.categoryName || '')}${formatParam}`
       );
     }
   };

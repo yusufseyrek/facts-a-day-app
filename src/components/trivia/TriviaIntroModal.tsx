@@ -16,13 +16,13 @@ import type { TriviaQuestionFormat } from '../../services/api';
 
 export type TriviaType = 'daily' | 'mixed' | 'category';
 
-/** The mixed modal's question-type selector: both formats or a single one. */
+/** The question-type selector: both formats or a single one. */
 type FormatSelection = 'all' | TriviaQuestionFormat;
 
 interface TriviaIntroModalProps {
   visible: boolean;
-  /** `format` is set when the user narrowed a mixed session to one question
-      type via the in-modal selector; undefined = play the full mixed batch. */
+  /** `format` is set when the user narrowed a mixed or category session to one
+      question type via the in-modal selector; undefined = the full batch. */
   onStart: (format?: TriviaQuestionFormat) => void;
   onClose: () => void;
   type: TriviaType;
@@ -32,7 +32,8 @@ interface TriviaIntroModalProps {
   categoryColor?: string;
   questionCount: number;
   /** Per-format slices of the mixed pool (mixed type only) — gate and size the
-      question-type selector. */
+      mixed selector chips. Category pools have no per-format counts, so
+      category chips are never gated by these. */
   trueFalseCount?: number;
   multipleChoiceCount?: number;
   masteredCount?: number;
@@ -72,41 +73,37 @@ export function TriviaIntroModal({
   const surfaceColor = isDark ? hexColors.dark.surface : hexColors.light.surface;
   const successColor = isDark ? hexColors.dark.success : hexColors.light.success;
   const purpleColor = isDark ? hexColors.dark.neonPurple : hexColors.light.neonPurple;
-  const greenColor = isDark ? hexColors.dark.neonGreen : hexColors.light.neonGreen;
-  const orangeColor = isDark ? hexColors.dark.neonOrange : hexColors.light.neonOrange;
   const borderColor = isDark ? hexColors.dark.border : hexColors.light.border;
 
-  // Question-type selection (mixed only). Reset on every open: a fresh modal
-  // always offers the full batch, never a leftover narrowing.
+  // Question-type selection (mixed + category). Reset on every open: a fresh
+  // modal always offers the full batch, never a leftover narrowing.
   const [format, setFormat] = useState<FormatSelection>('all');
   useEffect(() => {
     if (visible) setFormat('all');
   }, [visible]);
 
   const selectedFormat: TriviaQuestionFormat | undefined =
-    type === 'mixed' && format !== 'all' ? format : undefined;
+    (type === 'mixed' || type === 'category') && format !== 'all' ? format : undefined;
 
-  // Narrowing to one format swaps in that format's slice of the pool.
+  // Narrowing to one format swaps in that format's slice of the pool — mixed
+  // only: category sessions have no per-format counts, so they keep showing
+  // the session size (the fetch clamps to what the category actually has).
   const displayQuestionCount =
-    selectedFormat === 'true_false'
+    type === 'mixed' && selectedFormat === 'true_false'
       ? Math.min(trueFalseCount, MIXED_TRIVIA_QUESTIONS)
-      : selectedFormat === 'multiple_choice'
+      : type === 'mixed' && selectedFormat === 'multiple_choice'
         ? Math.min(multipleChoiceCount, MIXED_TRIVIA_QUESTIONS)
         : questionCount;
 
-  // Determine accent color based on type; for mixed the accent follows the
-  // format selection (same hue map as the old dedicated grid cards:
-  // mixed=purple, T/F=green, MC=orange).
-  const getAccentColor = () => {
-    if (type === 'daily') return primaryColor;
-    if (type === 'mixed') {
-      if (selectedFormat === 'true_false') return greenColor;
-      if (selectedFormat === 'multiple_choice') return orangeColor;
-      return purpleColor;
-    }
-    return categoryColor || primaryColor;
-  };
-  const accentColor = getAccentColor();
+  // Accent color is fixed per modal type (mixed keeps the purple its grid
+  // card owns) — deliberately NOT swapped when the format selection changes,
+  // so narrowing never re-tints the dialog.
+  const accentColor =
+    type === 'daily'
+      ? primaryColor
+      : type === 'mixed'
+        ? purpleColor
+        : categoryColor || primaryColor;
 
   // Get the appropriate icon
   const renderIcon = () => {
@@ -150,21 +147,21 @@ export function TriviaIntroModal({
   // Personal accuracy across previously answered questions in this scope.
   const accuracyPct = answeredCount > 0 ? Math.round((correctCount / answeredCount) * 100) : 0;
 
-  // Selector chips: each format keeps the hue it owned as a grid card. A
-  // format with no unanswered questions left is offered but inert.
+  // Selector chips. All share the modal's accent so a selection never shifts
+  // the dialog's colors. Mixed gates a format with no unanswered questions
+  // left (offered but inert); category pools have no per-format counts, so
+  // category chips stay enabled and an empty narrowing surfaces at fetch time.
   const formatOptions = [
-    { key: 'all', label: t('triviaFormatAll'), color: purpleColor, enabled: true },
+    { key: 'all', label: t('triviaFormatAll'), enabled: true },
     {
       key: 'true_false',
       label: t('trueFalseTrivia'),
-      color: greenColor,
-      enabled: trueFalseCount > 0,
+      enabled: type !== 'mixed' || trueFalseCount > 0,
     },
     {
       key: 'multiple_choice',
       label: t('multipleChoiceTrivia'),
-      color: orangeColor,
-      enabled: multipleChoiceCount > 0,
+      enabled: type !== 'mixed' || multipleChoiceCount > 0,
     },
   ] as const;
 
@@ -317,11 +314,11 @@ export function TriviaIntroModal({
           </XStack>
         )}
 
-        {/* Question Types: an interactive format selector for mixed (both
-            formats / T/F-only / MC-only — the old dedicated cards folded into
-            this dialog), a static note elsewhere (daily and category pools
-            aren't format-filterable). */}
-        {type === 'mixed' ? (
+        {/* Question Types: an interactive format selector for mixed and
+            category (both formats / T/F-only / MC-only — the old dedicated
+            cards folded into this dialog), a static note for daily (the
+            curated daily batch isn't format-filterable). */}
+        {type !== 'daily' ? (
           <YStack
             backgroundColor={surfaceColor}
             borderRadius={radius.md}
@@ -360,14 +357,14 @@ export function TriviaIntroModal({
                       paddingHorizontal={spacing.sm}
                       borderRadius={radius.full}
                       borderWidth={1}
-                      borderColor={selected ? option.color : borderColor}
-                      backgroundColor={selected ? option.color : 'transparent'}
+                      borderColor={selected ? accentColor : borderColor}
+                      backgroundColor={selected ? accentColor : 'transparent'}
                       alignItems="center"
                       justifyContent="center"
                     >
                       <Text.Caption
                         fontFamily={FONT_FAMILIES.semibold}
-                        color={selected ? getContrastColor(option.color) : secondaryTextColor}
+                        color={selected ? getContrastColor(accentColor) : secondaryTextColor}
                         numberOfLines={1}
                         textAlign="center"
                       >

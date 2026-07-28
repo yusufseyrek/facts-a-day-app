@@ -40,6 +40,7 @@ import { MIN_SECONDS_PER_QUESTION, TIME_PER_QUESTION } from '../../src/services/
 import { hexColors, useTheme } from '../../src/theme';
 
 import type { TriviaMode } from '../../src/services/analytics';
+import type { TriviaQuestionFormat } from '../../src/services/api';
 import type { QuestionWithFact, TriviaSessionWithCategory } from '../../src/services/database';
 
 // Streak milestone thresholds — a milestone fires once per crossing at the
@@ -66,8 +67,16 @@ export default function TriviaGameScreen() {
     categorySlug?: string;
     categoryName?: string;
     sessionId?: string;
+    format?: string;
   }>();
   const isDark = theme === 'dark';
+  // Optional question-type narrowing from the intro dialog (category sessions;
+  // mixed narrowing arrives as its own `type`). Anything unknown plays as the
+  // full pool rather than erroring.
+  const formatFilter: TriviaQuestionFormat | undefined =
+    params.format === 'true_false' || params.format === 'multiple_choice'
+      ? params.format
+      : undefined;
   const triviaMode: TriviaMode =
     params.type === 'daily'
       ? 'daily'
@@ -297,7 +306,12 @@ export default function TriviaGameScreen() {
       } else if (params.type === 'true_false' || params.type === 'multiple_choice') {
         questions = await triviaService.getMixedTriviaQuestions(locale, params.type);
       } else if (params.type === 'category' && params.categorySlug) {
-        questions = await triviaService.getCategoryTriviaQuestions(params.categorySlug, locale);
+        questions = await triviaService.getCategoryTriviaQuestions(
+          params.categorySlug,
+          locale,
+          undefined,
+          formatFilter
+        );
       }
 
       if (questions.length === 0) {
@@ -306,11 +320,16 @@ export default function TriviaGameScreen() {
       }
 
       // Total time scales with the format: T/F rounds read faster than
-      // 3-option rounds, mixed batches use the average.
+      // 3-option rounds, mixed batches use the average. Mixed narrowing
+      // arrives as the type itself, category narrowing as the format param.
+      const effectiveFormat =
+        params.type === 'true_false' || params.type === 'multiple_choice'
+          ? params.type
+          : formatFilter;
       const secondsPerQuestion =
-        params.type === 'true_false'
+        effectiveFormat === 'true_false'
           ? TIME_PER_QUESTION.TRUE_FALSE
-          : params.type === 'multiple_choice'
+          : effectiveFormat === 'multiple_choice'
             ? TIME_PER_QUESTION.MULTIPLE_CHOICE
             : TIME_PER_QUESTION.AVERAGE;
       const totalTime = questions.length * secondsPerQuestion;

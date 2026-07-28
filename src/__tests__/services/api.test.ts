@@ -1,4 +1,4 @@
-import { __testing, recoverUser, reportFact } from '../../services/api';
+import { __testing, getTriviaCategory, recoverUser, reportFact } from '../../services/api';
 
 const { fetchWithTimeout, retryWithBackoff } = __testing;
 
@@ -254,5 +254,36 @@ describe('api — recoverUser (NO_BINDING is expected, not a failure)', () => {
 
     await expect(recoverUser('android-ssaid')).rejects.toThrow('boom');
     expect(errorSpy).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('api — getTriviaCategory question_type narrowing', () => {
+  beforeEach(() => {
+    jest.useRealTimers();
+    jest.restoreAllMocks();
+  });
+
+  it('threads question_type into the request URL when narrowed', async () => {
+    (global.fetch as jest.Mock) = jest
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify({ questions: [] }), { status: 200 }));
+
+    await getTriviaCategory('science', 'en', 10, [1, 2], 'true_false');
+
+    const url = (global.fetch as jest.Mock).mock.calls[0][0] as string;
+    expect(url).toContain('/api/trivia/category/science?');
+    expect(url).toContain('question_type=true_false');
+    expect(url).toContain('exclude_question_ids=1%2C2');
+  });
+
+  it('omits question_type when not narrowed', async () => {
+    (global.fetch as jest.Mock) = jest
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify({ questions: [] }), { status: 200 }));
+
+    await getTriviaCategory('science', 'en');
+
+    const url = (global.fetch as jest.Mock).mock.calls[0][0] as string;
+    expect(url).not.toContain('question_type');
   });
 });

@@ -925,15 +925,19 @@ export async function getTriviaRandom(
   return res.questions;
 }
 
-/** Category trivia, excluding mastered/answered question ids. */
+/** Category trivia, excluding mastered/answered question ids.
+ * `questionType` narrows the category pool to one format (the intro dialog's
+ * T/F-only / MC-only selection). Pre-upgrade servers ignore the param and
+ * return an unfiltered batch. */
 export async function getTriviaCategory(
   slug: string,
   language: string,
   limit?: number,
-  excludeIds?: number[]
+  excludeIds?: number[],
+  questionType?: TriviaQuestionFormat
 ): Promise<TriviaQuestionResponse[]> {
   const res = await makeRequest<{ questions: TriviaQuestionResponse[] }>(
-    `/api/trivia/category/${encodeURIComponent(slug)}?${triviaQuery(language, limit, excludeIds)}`
+    `/api/trivia/category/${encodeURIComponent(slug)}?${triviaQuery(language, limit, excludeIds, questionType)}`
   );
   return res.questions;
 }
